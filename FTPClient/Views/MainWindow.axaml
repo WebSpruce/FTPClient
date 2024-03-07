@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:FTPClient.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
+        x:Class="FTPClient.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="FTPClient"
+        SystemDecorations="None" Background="Transparent"
+        PointerMoved="InputElement_OnPointerMoved"
+        PointerPressed="InputElement_OnPointerPressed"
+        PointerReleased="InputElement_OnPointerReleased"
+        >
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+    
+    <Border CornerRadius="10" Background="#2c2f33">
+        <Grid ColumnDefinitions="300,*" RowDefinitions="50,100,*,30">
+            <StackPanel Grid.Row="0" Grid.Column="1">
+                <Button Content="X" 
+                        FontSize="40" FontWeight="Regular" HorizontalAlignment="Right" Width="40"></Button>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="0">
+                <Label Content="FTP CLIENT" FontSize="40" FontWeight="Black"></Label>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Grid.Column="0">
+                <Button Content="click"></Button>
+                <SplitView 
+                    IsPaneOpen="True" DisplayMode="Inline" OpenPaneLength="100">
+                    <SplitView.Pane>
+                        <TextBlock Text="Pane"
+                                   FontSize="24"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
+                    </SplitView.Pane>
+
+                   
+                </SplitView>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
