@@ -4,8 +4,14 @@
     <option name="projectPerEditor">
       <map>
         <entry key="FTPClient/App.axaml" value="FTPClient/FTPClient.csproj" />
+        <entry key="FTPClient/Assets/Colors.axaml" value="FTPClient/FTPClient.csproj" />
+        <entry key="FTPClient/Assets/Icons.axaml" value="FTPClient/FTPClient.csproj" />
         <entry key="FTPClient/Colors.axaml" value="FTPClient/FTPClient.csproj" />
+        <entry key="FTPClient/Views/HistoryPageView.axaml" value="FTPClient/FTPClient.csproj" />
+        <entry key="FTPClient/Views/HomePage.axaml" value="FTPClient/FTPClient.csproj" />
+        <entry key="FTPClient/Views/HomePageView.axaml" value="FTPClient/FTPClient.csproj" />
         <entry key="FTPClient/Views/MainWindow.axaml" value="FTPClient/FTPClient.csproj" />
+        <entry key="FTPClient/Views/SettingsPage.axaml" value="FTPClient/FTPClient.csproj" />
       </map>
     </option>
   </component>

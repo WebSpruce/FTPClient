@@ -2,18 +2,23 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="FTPClient.App"
              xmlns:local="using:FTPClient"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Dark">
 
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
   
+    <Application.Resources>
+        <FontFamily x:Key="MadeInfinity">avares://GoogleFonts/Assets/Fonts#MADEINFINITYPersonalUse</FontFamily>
+    </Application.Resources>
+    
     <Application.Styles>
+        <StyleInclude Source="avares://FTPClient/Assets/Icons.axaml"></StyleInclude>
+        <StyleInclude Source="avares://FTPClient/Assets/Colors.axaml"></StyleInclude>
         <FluentTheme DensityStyle="Compact">
             <FluentTheme.Palettes>
-                <ColorPaletteResources x:Key="Light" Accent="Green" RegionColor="Red" ErrorText="Red" />
-                <ColorPaletteResources x:Key="Dark" Accent="DarkGreen" RegionColor="Red" ErrorText="Yellow" />
+                <ColorPaletteResources x:Key="Light" Accent="{StaticResource Accent}" RegionColor="{StaticResource Accent2}" ErrorText="Red" />
+                <ColorPaletteResources x:Key="Dark" Accent="{StaticResource Accent}" RegionColor="{StaticResource Accent2}" ErrorText="Red" />
             </FluentTheme.Palettes>
         </FluentTheme>
     </Application.Styles>

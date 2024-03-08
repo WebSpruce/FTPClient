@@ -14,34 +14,50 @@
         PointerPressed="InputElement_OnPointerPressed"
         PointerReleased="InputElement_OnPointerReleased"
         >
-
-    <Design.DataContext>
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
-    
-    <Border CornerRadius="10" Background="#2c2f33">
-        <Grid ColumnDefinitions="300,*" RowDefinitions="50,100,*,30">
-            <StackPanel Grid.Row="0" Grid.Column="1">
-                <Button Content="X" 
-                        FontSize="40" FontWeight="Regular" HorizontalAlignment="Right" Width="40"></Button>
-            </StackPanel>
-            <StackPanel Grid.Row="1" Grid.Column="0">
-                <Label Content="FTP CLIENT" FontSize="40" FontWeight="Black"></Label>
-            </StackPanel>
-            <StackPanel Grid.Row="2" Grid.Column="0">
-                <Button Content="click"></Button>
-                <SplitView 
-                    IsPaneOpen="True" DisplayMode="Inline" OpenPaneLength="100">
-                    <SplitView.Pane>
-                        <TextBlock Text="Pane"
-                                   FontSize="24"
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Center"/>
-                    </SplitView.Pane>
-
-                   
-                </SplitView>
-            </StackPanel>
-        </Grid>
-    </Border>
+    <SplitView 
+        IsPaneOpen="{Binding IsPaneOpen}" PanePlacement="Left" DisplayMode="CompactInline" CompactPaneLength="55" OpenPaneLength="150" 
+        Background="#24272a" PaneBackground="#24272a">
+        <SplitView.Pane>
+            <Border CornerRadius="10"  Margin="5" Background="#2c2f33">
+                <StackPanel><Button Command="{Binding SplitViewTriggerCommand}" Background="#2c2f33">
+                    <PathIcon Data="{StaticResource LineHorizontal3Regular}"
+                              Width="25" Height="25" Margin="3"></PathIcon>
+                </Button>
+                <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedListItem}"
+                    Background="#2c2f33">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ListItemTemplate}">
+                            <StackPanel Spacing="15" Orientation="Horizontal">
+                                <PathIcon Data="{Binding ListItemIcon}"
+                                          Width="25" Height="25" Margin="7,3,3,3"></PathIcon>
+                                <TextBlock Text="{Binding Label}" 
+                                           FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                </StackPanel>
+            </Border>
+        </SplitView.Pane>
+        <SplitView.Content>
+            <Border CornerRadius="10,0,0,10" Background="#2c2f33" Padding="10">
+                <TransitioningContentControl Content="{Binding CurrentPage}"></TransitioningContentControl>
+            </Border>
+        </SplitView.Content>
+    </SplitView>
+    <!-- <Border CornerRadius="10" Background="#2c2f33"> -->
+    <!--     <Grid ColumnDefinitions="300,*" RowDefinitions="50,100,*,30"> -->
+    <!--         <StackPanel Grid.Row="0" Grid.Column="1"> -->
+    <!--             <Button Content="X"  -->
+    <!--                     FontSize="40" FontWeight="Regular" HorizontalAlignment="Right" Width="40"></Button> -->
+    <!--         </StackPanel> -->
+    <!--         <StackPanel Grid.Row="1" Grid.Column="0"> -->
+    <!--             <Label Content="FTP CLIENT" FontSize="40" FontWeight="Black"></Label> -->
+    <!--         </StackPanel> -->
+    <!--         <StackPanel Grid.Row="2" Grid.Column="0"> -->
+    <!--              -->
+    <!--         </StackPanel> -->
+    <!--     </Grid> -->
+    <!-- </Border> -->
 </Window>
