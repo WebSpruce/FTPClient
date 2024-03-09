@@ -2,10 +2,10 @@
 using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using FTPClient.Views;
 
 namespace FTPClient.ViewModels;
 
@@ -20,11 +20,15 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] 
     private ListItemTemplate? _selectedListItem;
     
-    public ObservableCollection<ListItemTemplate> Items { get; } = new()
+    public ObservableCollection<ListItemTemplate> MainMenuItems { get; } = new()
     {
         new ListItemTemplate(typeof(HomePageViewModel), "HomeRegular"),
         new ListItemTemplate(typeof(HistoryPageViewModel), "HistoryRegular"),
+    };
+    public ObservableCollection<ListItemTemplate> FooterMenuItems { get; } = new()
+    {
         new ListItemTemplate(typeof(SettingsPageViewModel), "SettingsRegular"),
+        new ListItemTemplate(typeof(ExitPageViewModel), "ExitRegular"),
     };
 
     partial void OnSelectedListItemChanged(ListItemTemplate? item)
@@ -32,6 +36,14 @@ public partial class MainWindowViewModel : ViewModelBase
         if (item is null)
         {
             return;
+        }
+
+        if (item.ModelType == typeof(ExitPageViewModel))
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp)
+            {
+                desktopApp.Shutdown();
+            }
         }
         var instance = Activator.CreateInstance(item.ModelType);
         if (instance is null)

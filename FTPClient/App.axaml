@@ -9,7 +9,13 @@
     </Application.DataTemplates>
   
     <Application.Resources>
-        <FontFamily x:Key="MadeInfinity">avares://GoogleFonts/Assets/Fonts#MADEINFINITYPersonalUse</FontFamily>
+        <FontFamily x:Key="MadeInfinity">
+            avares://FTPClient/Assets/Fonts/MADEINFINITYPersonalUse-Black.otf#MADEINFINITYPersonalUse-Black,
+            avares://FTPClient/Assets/Fonts/MADEINFINITYPersonalUse-Medium.otf#MADEINFINITYPersonalUse-Medium,
+            avares://FTPClient/Assets/Fonts/MADEINFINITYPersonalUse-Regular.otf#MADEINFINITYPersonalUse-Regular,
+            avares://FTPClient/Assets/Fonts/MADEINFINITYPersonalUse-Light.otf#MADEINFINITYPersonalUse-Light,
+            avares://FTPClient/Assets/Fonts/MADEINFINITYPersonalUse-Thin.otf#MADEINFINITYPersonalUse-Thin,
+        </FontFamily>
     </Application.Resources>
     
     <Application.Styles>

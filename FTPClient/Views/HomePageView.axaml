@@ -3,6 +3,36 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="FTPClient.Views.HomePageView">
-   <Label Content="HOMEPAGE" FontFamily="{StaticResource MadeInfinity}" FontWeight="Black"></Label>
+             x:Class="FTPClient.Views.HomePageView"
+             Background="#2c2f33">
+    
+    <Grid ColumnDefinitions="*,*" RowDefinitions="60,*">
+        <Border CornerRadius="10" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                Background="{StaticResource Second}" Margin="5">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto">
+                <StackPanel Orientation="Horizontal" Spacing="5" Margin="10">
+                    <TextBox Watermark="☁Host:"
+                        Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
+                    <TextBox Watermark="🙍‍♂️Username:"
+                             Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
+                    <TextBox Watermark="🗝Password:"
+                             Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
+                    <TextBox Watermark="🔱Port:"
+                             Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
+                    <Button Content="Connect"
+                            Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+                    <Button Content="X"
+                            Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="40" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        <Border CornerRadius="10" Grid.Row="1" Grid.Column="0" 
+                Background="{StaticResource Second}" Margin="10">
+            
+        </Border>
+        <Border CornerRadius="10" Grid.Row="1" Grid.Column="1" 
+                Background="{StaticResource Second}" Margin="10">
+            
+        </Border>
+    </Grid>
 </UserControl>
