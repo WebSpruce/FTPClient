@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="FTPClient.Views.HomePageView"
+             xmlns:vm="using:FTPClient.ViewModels"
+             x:DataType="vm:HomePageViewModel"
              Background="#2c2f33">
     
     <Grid ColumnDefinitions="*,*" RowDefinitions="60,*">
@@ -11,17 +13,17 @@
                 Background="{StaticResource Second}" Margin="5">
             <ScrollViewer HorizontalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Horizontal" Spacing="5" Margin="10">
-                    <TextBox Watermark="☁Host:"
-                        Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
-                    <TextBox Watermark="🙍‍♂️Username:"
+                    <TextBox Text="{Binding Host}" Watermark="☁Host:" 
+                                   Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
+                    <TextBox Text="{Binding Username}" Watermark="🙍‍♂️Username:"
                              Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
-                    <TextBox Watermark="🗝Password:"
+                    <TextBox Text="{Binding Password}" Watermark="🗝Password:" PasswordChar="*" 
                              Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
-                    <TextBox Watermark="🔱Port:"
+                    <TextBox Text="{Binding Port}" Watermark="🔱Port:"
                              Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
-                    <Button Content="Connect"
+                    <Button Content="Connect" Command="{Binding ConnectToServerCommand}" IsVisible="{Binding ConnectBtnVisibility}"
                             Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
-                    <Button Content="X"
+                    <Button Content="X" Command="{Binding DisconnectFromServerCommand}" IsVisible="{Binding DisconnectBtnVisibility}"
                             Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="40" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
                 </StackPanel>
             </ScrollViewer>
