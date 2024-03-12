@@ -5,6 +5,7 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="FTPClient.Views.HomePageView"
              xmlns:vm="using:FTPClient.ViewModels"
+             xmlns:models="using:FTPClient.Models"
              x:DataType="vm:HomePageViewModel"
              Background="#2c2f33">
     
@@ -34,7 +35,24 @@
         </Border>
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="1" 
                 Background="{StaticResource Second}" Margin="10">
-            
+                <TreeView ItemsSource="{Binding ServerFiles}"
+                    Background="{StaticResource Second}" Margin="5">
+                    <TreeView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="{Binding Name}"/>
+                                <TreeView ItemsSource="{Binding FileItems}">
+                                    <TreeView.ItemTemplate>
+                                        <TreeDataTemplate>
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"/>
+                                        </TreeDataTemplate>
+                                    </TreeView.ItemTemplate>
+                                </TreeView>
+                            </StackPanel>
+                        </DataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
         </Border>
     </Grid>
 </UserControl>
