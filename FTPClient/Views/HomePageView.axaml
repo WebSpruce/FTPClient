@@ -36,7 +36,7 @@
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="1" 
                 Background="{StaticResource Second}" Margin="10">
             <StackPanel>
-                <ProgressBar IsIndeterminate="{Binding ServerProgressBarIsInderminate}" Minimum="0" Maximum="100" ShowProgressText="False"
+                <ProgressBar Value="{Binding ServerProgressBarValue}" Minimum="0" Maximum="100" ShowProgressText="False"
                              Height="3" Foreground="{StaticResource Accent2}"></ProgressBar>
                 <TextBox Text="{Binding ServerPath}" Watermark="⚫Path:" IsReadOnly="True"
                          Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>

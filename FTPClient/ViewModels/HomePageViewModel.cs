@@ -4,13 +4,11 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using Avalonia.Controls;
-using Avalonia.Input;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using FluentFTP;
 using FTPClient.Models;
-using FTPClient.Views;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using Directory = FTPClient.Models.Directory;
@@ -44,11 +42,12 @@ public partial class HomePageViewModel : ViewModelBase
     private bool _disconnectBtnVisibility;
     
     [ObservableProperty] 
+    private double _serverProgressBarValue;
+    [ObservableProperty] 
     private ObservableCollection<Directory> _serverFiles = new();
     [ObservableProperty] 
     private string _serverPath = "/";
     
-    private FtpClient client;
     private SftpClient sftpClient;
     
     private Directory _selectedDirectory;
@@ -65,7 +64,6 @@ public partial class HomePageViewModel : ViewModelBase
             }
         }
     }
-
     private FileItem _selectedFileItem;
     public FileItem SelectedFileItem
     {
@@ -96,35 +94,20 @@ public partial class HomePageViewModel : ViewModelBase
             }
         }
     }
-
-    [ObservableProperty] 
-    private bool _serverProgressBarIsInderminate;
     
     [RelayCommand]
-    private async void ConnectToServer()
+    private async Task ConnectToServer()
     {
         try
         {
-            ServerProgressBarIsInderminate = true;
-
-            using (sftpClient = new SftpClient(new PasswordConnectionInfo(Host, Port, Username, Password)))
+            ServerProgressBarValue = 0;
+            sftpClient = new SftpClient(new PasswordConnectionInfo(Host, Port, Username, Password));
+            await Task.Run(() =>sftpClient.Connect());
+            if (sftpClient.IsConnected)
             {
-                sftpClient.Connect();
-                if (sftpClient.IsConnected)
-                {
-                    ServerFiles.Add(GetAllDirectories(sftpClient, "/"));
-                }
+                await Task.Run(() =>ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
             }
-
-            foreach (var directory in ServerFiles)
-            {
-                Debug.WriteLine($"dir: {directory.Name}");
-                foreach (var fileItem in directory.FileItems)
-                {
-                    Debug.WriteLine($"-: {fileItem.Name}");
-                }
-            }
-
+            
             SetBtnsVisibility();
         }
         catch (Exception ex)
@@ -133,7 +116,7 @@ public partial class HomePageViewModel : ViewModelBase
         }
         finally
         {
-            ServerProgressBarIsInderminate = false;
+            ServerProgressBarValue = 100;
         }
     }
     [RelayCommand]
@@ -141,12 +124,18 @@ public partial class HomePageViewModel : ViewModelBase
     {
         try
         {
-            sftpClient.Disconnect();
+            if (sftpClient.IsConnected)
+            {
+                sftpClient.Disconnect();
+                ServerFiles.Clear();
+                ServerPath = "/";
+            }
+
             SetBtnsVisibility();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Connect to the server error : {ex}");
+            Debug.WriteLine($"Disconnect from the server error : {ex}");
         }
     }
 
@@ -161,26 +150,18 @@ public partial class HomePageViewModel : ViewModelBase
         var directory = new Directory { Name = Path.GetFileName(path), Path = path };
         try
         {
-            var listOfFiles = sftpClient.ListDirectory(path);
+            var listOfFiles = sftpClient.ListDirectory(path); 
+            ServerProgressBarValue = 50;
             foreach (var file in listOfFiles)
             {
-                try
+                if (file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
                 {
-                    if (file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
-                    {
-                        directory.FileItems.Add(GetAllDirectories(sftpClient, file.FullName));
-                    }else if (!file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
-                    {
-                        directory.FileItems.Add(new FileItem { Name = Path.GetFileName(file.FullName), Path = file.FullName });
-                    }
-                }
-                catch (SftpPermissionDeniedException ex)
+                    directory.FileItems.Add(GetAllDirectories(sftpClient, file.FullName));
+                }else if (!file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
                 {
-                    Debug.WriteLine($"Permission denied for directory: {file.FullName}. {ex.Message}");
+                    directory.FileItems.Add(new FileItem { Name = Path.GetFileName(file.FullName), Path = file.FullName });
                 }
             }
-
-            return directory;
         }
         catch (SftpPermissionDeniedException ex)
         {
