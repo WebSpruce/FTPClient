@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FluentFTP;
 using FTPClient.Models;
+using FTPClient.Views;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using Directory = FTPClient.Models.Directory;
@@ -32,7 +33,7 @@ public partial class HomePageViewModel : ViewModelBase
         }
     }
     [ObservableProperty] 
-    private string _username;
+    private string _username; 
     [ObservableProperty] 
     private string _password;
     [ObservableProperty] 
@@ -41,17 +42,71 @@ public partial class HomePageViewModel : ViewModelBase
     private bool _connectBtnVisibility = true;
     [ObservableProperty] 
     private bool _disconnectBtnVisibility;
+    
     [ObservableProperty] 
     private ObservableCollection<Directory> _serverFiles = new();
-
+    [ObservableProperty] 
+    private string _serverPath = "/";
+    
     private FtpClient client;
     private SftpClient sftpClient;
+    
+    private Directory _selectedDirectory;
+    public Directory SelectedDirectory
+    {
+        get => _selectedDirectory;
+        set
+        {
+            SetProperty(ref _selectedDirectory, value);
+            if (_selectedDirectory != null)
+            {
+                SelectedFileItem = null;
+                ServerPath = _selectedDirectory.Path;
+            }
+        }
+    }
+
+    private FileItem _selectedFileItem;
+    public FileItem SelectedFileItem
+    {
+        get => _selectedFileItem;
+        set
+        {
+            SetProperty(ref _selectedFileItem, value);
+            if (_selectedFileItem != null)
+            {
+                SelectedDirectory = null;
+                ServerPath = _selectedFileItem.Path;
+            }
+        }
+    }
+    private object _selectedServerItem;
+    public object SelectedServerItem
+    {
+        get => _selectedServerItem;
+        set
+        {
+            if (value is Directory directory)
+            {
+                SelectedDirectory = directory;
+            }
+            else if (value is FileItem fileItem)
+            {
+                SelectedFileItem = fileItem;
+            }
+        }
+    }
+
+    [ObservableProperty] 
+    private bool _serverProgressBarIsInderminate;
     
     [RelayCommand]
     private async void ConnectToServer()
     {
         try
         {
+            ServerProgressBarIsInderminate = true;
+
             using (sftpClient = new SftpClient(new PasswordConnectionInfo(Host, Port, Username, Password)))
             {
                 sftpClient.Connect();
@@ -60,7 +115,7 @@ public partial class HomePageViewModel : ViewModelBase
                     ServerFiles.Add(GetAllDirectories(sftpClient, "/"));
                 }
             }
-            
+
             foreach (var directory in ServerFiles)
             {
                 Debug.WriteLine($"dir: {directory.Name}");
@@ -69,11 +124,16 @@ public partial class HomePageViewModel : ViewModelBase
                     Debug.WriteLine($"-: {fileItem.Name}");
                 }
             }
+
             SetBtnsVisibility();
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Connect to the server error : {ex}");
+        }
+        finally
+        {
+            ServerProgressBarIsInderminate = false;
         }
     }
     [RelayCommand]
@@ -111,7 +171,7 @@ public partial class HomePageViewModel : ViewModelBase
                         directory.FileItems.Add(GetAllDirectories(sftpClient, file.FullName));
                     }else if (!file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
                     {
-                        directory.FileItems.Add(new FileItem { Name = file.Name, Path = file.FullName });
+                        directory.FileItems.Add(new FileItem { Name = Path.GetFileName(file.FullName), Path = file.FullName });
                     }
                 }
                 catch (SftpPermissionDeniedException ex)

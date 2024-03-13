@@ -35,24 +35,27 @@
         </Border>
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="1" 
                 Background="{StaticResource Second}" Margin="10">
-                <TreeView ItemsSource="{Binding ServerFiles}"
-                    Background="{StaticResource Second}" Margin="5">
-                    <TreeView.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Vertical">
-                                <TextBlock Text="{Binding Name}"/>
-                                <TreeView ItemsSource="{Binding FileItems}">
-                                    <TreeView.ItemTemplate>
-                                        <TreeDataTemplate>
-                                            <TextBlock Text="{Binding Name}"
-                                                       FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"/>
-                                        </TreeDataTemplate>
-                                    </TreeView.ItemTemplate>
-                                </TreeView>
-                            </StackPanel>
-                        </DataTemplate>
-                    </TreeView.ItemTemplate>
-                </TreeView>
+            <StackPanel>
+                <ProgressBar IsIndeterminate="{Binding ServerProgressBarIsInderminate}" Minimum="0" Maximum="100" ShowProgressText="False"
+                             Height="3" Foreground="{StaticResource Accent2}"></ProgressBar>
+                <TextBox Text="{Binding ServerPath}" Watermark="⚫Path:" IsReadOnly="True"
+                         Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="560" Padding="0" Margin="0">
+                    <TreeView ItemsSource="{Binding ServerFiles}" SelectedItem="{Binding SelectedServerItem}" AutoScrollToSelectedItem="True"
+                              Background="{StaticResource Second}" Margin="5" Padding="0" >
+                        <TreeView.DataTemplates>
+                            <TreeDataTemplate DataType="models:Directory" ItemsSource="{Binding FileItems}">
+                                    <TextBlock Text="{Binding Name}"/>
+                            </TreeDataTemplate>
+                            <DataTemplate DataType="models:FileItem">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </TreeView.DataTemplates>
+                    </TreeView>
+                </ScrollViewer>
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>
