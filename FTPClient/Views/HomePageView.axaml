@@ -9,6 +9,10 @@
              x:DataType="vm:HomePageViewModel"
              Background="#2c2f33">
     
+    <UserControl.KeyBindings>
+        <KeyBinding Gesture="Enter" Command="{Binding ConnectToServerCommand}"></KeyBinding>
+    </UserControl.KeyBindings>
+    
     <Grid ColumnDefinitions="*,*" RowDefinitions="60,*">
         <Border CornerRadius="10" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
                 Background="{StaticResource Second}" Margin="5">

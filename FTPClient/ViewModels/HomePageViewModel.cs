@@ -1,14 +1,15 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FTPClient.Models;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using Directory = FTPClient.Models.Directory;
@@ -18,7 +19,7 @@ namespace FTPClient.ViewModels;
 public partial class HomePageViewModel : ViewModelBase
 {
     
-    private string _host;
+    private string _host = string.Empty;
     public string Host
     {
         get => _host;
@@ -31,11 +32,21 @@ public partial class HomePageViewModel : ViewModelBase
         }
     }
     [ObservableProperty] 
-    private string _username; 
+    private string _username = string.Empty; 
     [ObservableProperty] 
-    private string _password;
-    [ObservableProperty] 
-    private int _port;
+    private string _password = string.Empty;
+    private string _port = string.Empty;
+    public string Port
+    {
+        get => _port;
+        set
+        {
+            if (Regex.IsMatch(value, @"^\d*$"))
+            {
+                SetProperty(ref _port, value);
+            }
+        }
+    }
     [ObservableProperty] 
     private bool _connectBtnVisibility = true;
     [ObservableProperty] 
@@ -101,14 +112,43 @@ public partial class HomePageViewModel : ViewModelBase
         try
         {
             ServerProgressBarValue = 0;
-            sftpClient = new SftpClient(new PasswordConnectionInfo(Host, Port, Username, Password));
-            await Task.Run(() =>sftpClient.Connect());
-            if (sftpClient.IsConnected)
+            if (string.IsNullOrEmpty(Host))
             {
-                await Task.Run(() =>ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
+                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Host input is null or empty.");
+                await errorMessageBox.ShowAsync();
             }
-            
-            SetBtnsVisibility();
+            else if (string.IsNullOrEmpty(Username))
+            {
+                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Username input is null or empty.");
+                await errorMessageBox.ShowAsync();
+            }
+            else if (string.IsNullOrEmpty(Password))
+            {
+                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Password input is null or empty.");
+                await errorMessageBox.ShowAsync();
+            }
+            else if (string.IsNullOrEmpty(Port))
+            {
+                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Port input is null or empty.");
+                await errorMessageBox.ShowAsync();
+            }
+            else if (!string.IsNullOrEmpty(Host) && !string.IsNullOrEmpty(Username) &&
+                     !string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(Port))
+            {
+                sftpClient = new SftpClient(new PasswordConnectionInfo(Host, int.Parse(Port), Username, Password));
+                await Task.Run(() => sftpClient.Connect());
+                if (sftpClient.IsConnected)
+                {
+                    await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
+                }
+
+                SetBtnsVisibility();
+            }
+
+        }
+        catch (SocketException se)
+        {
+            Debug.WriteLine($"Unreachable network : {se}");
         }
         catch (Exception ex)
         {
