@@ -5,11 +5,17 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FTPClient.Models;
+using FTPClient.Service.Interfaces;
+using FTPClient.Views;
+using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
-using MsBox.Avalonia.Enums;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using Directory = FTPClient.Models.Directory;
@@ -58,7 +64,14 @@ public partial class HomePageViewModel : ViewModelBase
     private ObservableCollection<Directory> _serverFiles = new();
     [ObservableProperty] 
     private string _serverPath = "/";
-    
+
+    [ObservableProperty]
+    private double _localProgressBarValue;
+    [ObservableProperty]
+    private ObservableCollection<Directory> _localFiles = new();
+    [ObservableProperty]
+    private string _localPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
     private SftpClient sftpClient;
     
     private Directory _selectedDirectory;
@@ -105,6 +118,65 @@ public partial class HomePageViewModel : ViewModelBase
             }
         }
     }
+
+    private Directory _selectedLocalDirectory;
+    public Directory SelectedLocalDirectory
+    {
+        get => _selectedLocalDirectory;
+        set
+        {
+            SetProperty(ref _selectedLocalDirectory, value);
+            if (_selectedLocalDirectory != null)
+            {
+                SelectedLocalFileItem = null;
+                LocalPath = _selectedLocalDirectory.Path;
+            }
+        }
+    }
+    private FileItem _selectedLocalFileItem;
+    public FileItem SelectedLocalFileItem
+    {
+        get => _selectedLocalFileItem;
+        set
+        {
+            SetProperty(ref _selectedLocalFileItem, value);
+            if (_selectedLocalFileItem != null)
+            {
+                SelectedLocalDirectory = null;
+                LocalPath = _selectedLocalFileItem.Path;
+            }
+        }
+    }
+    private object _selectedLocalItem;
+    public object SelectedLocalItem
+    {
+        get => _selectedLocalItem;
+        set
+        {
+            if (value is Directory directory)
+            {
+                SelectedLocalDirectory = directory;
+            }
+            else if (value is FileItem fileItem)
+            {
+                SelectedLocalFileItem = fileItem;
+            }
+        }
+    }
+
+
+    private readonly IServerOperationService _serverOperationService;
+    public HomePageViewModel()
+    {
+        _serverOperationService = ((App)Application.Current).Services.GetRequiredService<IServerOperationService>();
+        LocalFiles.Add(ShowDirectoriesAndFilesDefault(LocalPath));
+    }
+
+    public HomePageViewModel(IServerOperationService serverOperationService)
+    {
+        _serverOperationService = serverOperationService;
+        LocalFiles.Add(ShowDirectoriesAndFilesDefault(LocalPath));
+    }
     
     [RelayCommand]
     private async Task ConnectToServer()
@@ -135,13 +207,15 @@ public partial class HomePageViewModel : ViewModelBase
             else if (!string.IsNullOrEmpty(Host) && !string.IsNullOrEmpty(Username) &&
                      !string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(Port))
             {
-                sftpClient = new SftpClient(new PasswordConnectionInfo(Host, int.Parse(Port), Username, Password));
-                await Task.Run(() => sftpClient.Connect());
+                sftpClient = await _serverOperationService.ConnectToServer(sftpClient, Host,  Username, Password, Port);
                 if (sftpClient.IsConnected)
                 {
                     await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
                 }
-
+                
+                var connectedMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Connected to the server.");
+                await connectedMessageBox.ShowAsync();
+                
                 SetBtnsVisibility();
             }
 
@@ -149,10 +223,14 @@ public partial class HomePageViewModel : ViewModelBase
         catch (SocketException se)
         {
             Debug.WriteLine($"Unreachable network : {se}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Unreachable network.");
+            await errorMessageBox.ShowAsync();
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Connect to the server error : {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Couldn't connect to the server.");
+            await errorMessageBox.ShowAsync();
         }
         finally
         {
@@ -166,11 +244,13 @@ public partial class HomePageViewModel : ViewModelBase
         {
             if (sftpClient.IsConnected)
             {
-                sftpClient.Disconnect();
-                ServerFiles.Clear();
-                ServerPath = "/";
+                sftpClient = _serverOperationService.DisconnectFromServer(sftpClient);
+                if (!sftpClient.IsConnected)
+                {
+                    ServerFiles.Clear();
+                    ServerPath = "/";
+                }
             }
-
             SetBtnsVisibility();
         }
         catch (Exception ex)
@@ -190,7 +270,7 @@ public partial class HomePageViewModel : ViewModelBase
         var directory = new Directory { Name = Path.GetFileName(path), Path = path };
         try
         {
-            var listOfFiles = sftpClient.ListDirectory(path); 
+            var listOfFiles = _serverOperationService.GetAllDirectories(sftpClient, path);
             ServerProgressBarValue = 50;
             foreach (var file in listOfFiles)
             {
@@ -213,5 +293,49 @@ public partial class HomePageViewModel : ViewModelBase
         }
 
         return directory;
+    }
+
+    private Directory ShowDirectoriesAndFilesDefault(string path)
+    {
+        var directory = new Directory { Name = Path.GetFileName(path), Path = path };
+        try
+        {
+            var listOfFiles = System.IO.Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
+            foreach (var file in listOfFiles)
+            {
+                var fileName = Path.GetFileName(file);
+                if (System.IO.Directory.Exists(file) && !fileName.StartsWith(".") && !fileName.StartsWith(".."))
+                {
+                    directory.FileItems.Add(ShowDirectoriesAndFilesDefault(file));
+                }
+                else if (!System.IO.Directory.Exists(file) && !fileName.StartsWith(".") && !fileName.StartsWith(".."))
+                {
+                    directory.FileItems.Add(new FileItem { Name = fileName, Path = file });
+                }
+            }
+        }
+        catch (SftpPermissionDeniedException ex)
+        {
+            Debug.WriteLine($"Permission denied for directory: {path}. {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GetAllDirectories error: {ex}");
+        }
+        return directory;
+    }
+    [RelayCommand]
+    private async void OpenFolder()
+    {
+        //var dialog = new OpenFolderDialog();
+        //var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
+        //var result = await dialog.ShowAsync(window);
+
+        //if (!string.IsNullOrEmpty(result))
+        //{
+        //    LocalPath = result;
+            
+        //    LocalFiles.Add(ShowDirectoriesAndFilesDefault(LocalPath));
+        //}
     }
 }

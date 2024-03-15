@@ -18,13 +18,13 @@
                 Background="{StaticResource Second}" Margin="5">
             <ScrollViewer HorizontalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Horizontal" Spacing="5" Margin="10">
-                    <TextBox Text="{Binding Host}" Watermark="☁Host:" 
+                    <TextBox Text="{Binding Host}" Watermark="☁Host:" KeyDown="PasteKeyDownCommand"
                                    Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
-                    <TextBox Text="{Binding Username}" Watermark="🙍‍♂️Username:"
+                    <TextBox Text="{Binding Username}" Watermark="🙍‍♂️Username:" KeyDown="PasteKeyDownCommand"
                              Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
-                    <TextBox Text="{Binding Password}" Watermark="🗝Password:" PasswordChar="*" 
+                    <TextBox Text="{Binding Password}" Watermark="🗝Password:" PasswordChar="*" KeyDown="PasteKeyDownCommand"
                              Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
-                    <TextBox Text="{Binding Port}" Watermark="🔱Port:"
+                    <TextBox Text="{Binding Port}" Watermark="🔱Port:" KeyDown="PasteKeyDownCommand"
                              Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
                     <Button Content="Connect" Command="{Binding ConnectToServerCommand}" IsVisible="{Binding ConnectBtnVisibility}"
                             Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
@@ -35,7 +35,31 @@
         </Border>
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="0" 
                 Background="{StaticResource Second}" Margin="10">
-            
+			<StackPanel>
+				<ProgressBar Value="{Binding LocalProgressBarValue}" Minimum="0" Maximum="100" ShowProgressText="False"
+                             Height="3" Foreground="{StaticResource Accent2}"></ProgressBar>
+				<StackPanel Orientation="Horizontal">
+				    <TextBox Text="{Binding LocalPath}" Watermark="⚫Path:" IsReadOnly="False"
+                         Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
+					<Button Content="📁" Command="{Binding OpenFolderCommand}"
+							Foreground="{StaticResource Accent}" Background="{StaticResource Main}"></Button>
+			    </StackPanel>
+				<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="560" Padding="0" Margin="0">
+					<TreeView ItemsSource="{Binding LocalFiles}" SelectedItem="{Binding SelectedLocalItem}" AutoScrollToSelectedItem="True"
+                              Background="{StaticResource Second}" Margin="5" Padding="0" >
+						<TreeView.DataTemplates>
+							<TreeDataTemplate DataType="models:Directory" ItemsSource="{Binding FileItems}">
+								<TextBlock Text="{Binding Name}"/>
+							</TreeDataTemplate>
+							<DataTemplate DataType="models:FileItem">
+								<StackPanel Orientation="Horizontal">
+									<TextBlock Text="{Binding Name}"/>
+								</StackPanel>
+							</DataTemplate>
+						</TreeView.DataTemplates>
+					</TreeView>
+				</ScrollViewer>
+			</StackPanel>
         </Border>
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="1" 
                 Background="{StaticResource Second}" Margin="10">

@@ -32,6 +32,11 @@
         <PackageReference Include="SSH.NET" Version="2024.0.0" />
     </ItemGroup>
 
+
+    <ItemGroup>
+      <ProjectReference Include="..\FTPClient.Service\FTPClient.Service.csproj" />
+    </ItemGroup>
+
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
 		<DefineConstants>$(DefineConstants);ENABLE_XAML_HOT_RELOAD</DefineConstants>
 	</PropertyGroup>

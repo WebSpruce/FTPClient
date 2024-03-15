@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FTPClient.Views;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 
 namespace FTPClient.ViewModels;
 
@@ -14,7 +18,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isPaneOpen = true;
     
-    [ObservableProperty] 
+    [ObservableProperty]
     private ViewModelBase _currentPage = new HomePageViewModel();
     
     [ObservableProperty] 
@@ -31,7 +35,7 @@ public partial class MainWindowViewModel : ViewModelBase
         new ListItemTemplate(typeof(ExitPageViewModel), "ExitRegular"),
     };
 
-    partial void OnSelectedListItemChanged(ListItemTemplate? item)
+    async partial void OnSelectedListItemChanged(ListItemTemplate? item)
     {
         if (item is null)
         {
@@ -45,13 +49,38 @@ public partial class MainWindowViewModel : ViewModelBase
                 desktopApp.Shutdown();
             }
         }
-        var instance = Activator.CreateInstance(item.ModelType);
-        if (instance is null)
+
+        if (CurrentPage is HomePageViewModel)
         {
-            return;
+            var connectedMessageBox = MessageBoxManager.GetMessageBoxStandard("Warning", "Are you sure to close this window?\nIt won't save your current connection.",ButtonEnum.YesNo);
+            var result = await connectedMessageBox.ShowAsync();
+            if (result == ButtonResult.Yes)
+            {
+                var instance = Activator.CreateInstance(item.ModelType);
+                if (instance is null)
+                {
+                    return;
+                }
+
+                CurrentPage = (ViewModelBase)instance;
+            }
+            else
+            {
+                return;
+            }
+        }
+        else
+        {
+            var instance = Activator.CreateInstance(item.ModelType);
+            if (instance is null)
+            {
+                return;
+            }
+
+            CurrentPage = (ViewModelBase)instance;
         }
 
-        CurrentPage = (ViewModelBase)instance;
+       
     }
     
     [RelayCommand]
