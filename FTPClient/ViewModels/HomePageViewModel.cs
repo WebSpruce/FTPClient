@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
-using FTPClient.Views;
 using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
 using Renci.SshNet;
@@ -327,15 +327,36 @@ public partial class HomePageViewModel : ViewModelBase
     [RelayCommand]
     private async void OpenFolder()
     {
-        //var dialog = new OpenFolderDialog();
-        //var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
-        //var result = await dialog.ShowAsync(window);
+        var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
 
-        //if (!string.IsNullOrEmpty(result))
-        //{
-        //    LocalPath = result;
-            
-        //    LocalFiles.Add(ShowDirectoriesAndFilesDefault(LocalPath));
-        //}
+        var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open Text File",
+            AllowMultiple = true,
+        });
+
+        if (files.Count > 0)
+        {
+            LocalFiles.Clear();
+            foreach (var file in files)
+            {
+                LocalFiles.Add(new Directory() { Name = file.Name, Path = file.Path.ToString() });
+            }
+        }
+    }
+    [RelayCommand]
+    private void RemoveFromServer()
+    {
+
+    } 
+    [RelayCommand]
+    private void MoveToServer()
+    {
+
+    } 
+    [RelayCommand]
+    private void MoveToLocal()
+    {
+
     }
 }

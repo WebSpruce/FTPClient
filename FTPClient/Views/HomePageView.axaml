@@ -13,8 +13,8 @@
         <KeyBinding Gesture="Enter" Command="{Binding ConnectToServerCommand}"></KeyBinding>
     </UserControl.KeyBindings>
     
-    <Grid ColumnDefinitions="*,*" RowDefinitions="60,*">
-        <Border CornerRadius="10" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+    <Grid ColumnDefinitions="*,35,*" RowDefinitions="60,*">
+        <Border CornerRadius="10" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
                 Background="{StaticResource Second}" Margin="5">
             <ScrollViewer HorizontalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Horizontal" Spacing="5" Margin="10">
@@ -34,7 +34,7 @@
             </ScrollViewer>
         </Border>
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="0" 
-                Background="{StaticResource Second}" Margin="10">
+                Background="{StaticResource Second}" Margin="10,10,5,10">
 			<StackPanel>
 				<ProgressBar Value="{Binding LocalProgressBarValue}" Minimum="0" Maximum="100" ShowProgressText="False"
                              Height="3" Foreground="{StaticResource Accent2}"></ProgressBar>
@@ -52,7 +52,7 @@
 								<TextBlock Text="{Binding Name}"/>
 							</TreeDataTemplate>
 							<DataTemplate DataType="models:FileItem">
-								<StackPanel Orientation="Horizontal">
+								<StackPanel Orientation="Horizontal" DragDrop.AllowDrop="True">
 									<TextBlock Text="{Binding Name}"/>
 								</StackPanel>
 							</DataTemplate>
@@ -61,8 +61,19 @@
 				</ScrollViewer>
 			</StackPanel>
         </Border>
-        <Border CornerRadius="10" Grid.Row="1" Grid.Column="1" 
-                Background="{StaticResource Second}" Margin="10">
+		<Border CornerRadius="5" Grid.Row="1" Grid.Column="1" 
+				Background="{StaticResource Second}" Padding="5,10" HorizontalAlignment="Center" VerticalAlignment="Center">
+			<StackPanel Orientation="Vertical" Spacing="5" VerticalAlignment="Center">
+			    <Button Content="➖" Command="{Binding RemoveFromServerCommand}"
+                                Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
+			    <Button Content="➙" Command="{Binding MoveToServerCommand}"
+                                Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
+			    <Button Content="🡐" Command="{Binding MoveToLocalCommand}"
+                                Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
+			</StackPanel>
+		</Border>
+        <Border CornerRadius="10" Grid.Row="1" Grid.Column="2" 
+                Background="{StaticResource Second}" Margin="5,10,10,10">
             <StackPanel>
                 <ProgressBar Value="{Binding ServerProgressBarValue}" Minimum="0" Maximum="100" ShowProgressText="False"
                              Height="3" Foreground="{StaticResource Accent2}"></ProgressBar>
