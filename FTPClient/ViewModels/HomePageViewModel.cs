@@ -57,7 +57,10 @@ public partial class HomePageViewModel : ViewModelBase
     private bool _connectBtnVisibility = true;
     [ObservableProperty] 
     private bool _disconnectBtnVisibility;
-    
+
+    [ObservableProperty]
+    private bool _isConnected=false;
+
     [ObservableProperty] 
     private double _serverProgressBarValue;
     [ObservableProperty] 
@@ -217,6 +220,7 @@ public partial class HomePageViewModel : ViewModelBase
                 await connectedMessageBox.ShowAsync();
                 
                 SetBtnsVisibility();
+                IsConnected = true;
             }
 
         }
@@ -252,6 +256,7 @@ public partial class HomePageViewModel : ViewModelBase
                 }
             }
             SetBtnsVisibility();
+            IsConnected = false;
         }
         catch (Exception ex)
         {
@@ -304,6 +309,7 @@ public partial class HomePageViewModel : ViewModelBase
             foreach (var file in listOfFiles)
             {
                 var fileName = Path.GetFileName(file);
+                file.Replace("file:///", "");
                 if (System.IO.Directory.Exists(file) && !fileName.StartsWith(".") && !fileName.StartsWith(".."))
                 {
                     directory.FileItems.Add(ShowDirectoriesAndFilesDefault(file));
@@ -327,36 +333,118 @@ public partial class HomePageViewModel : ViewModelBase
     [RelayCommand]
     private async void OpenFolder()
     {
-        var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
-
-        var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        try
         {
-            Title = "Open Text File",
-            AllowMultiple = true,
-        });
+            var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
 
-        if (files.Count > 0)
-        {
-            LocalFiles.Clear();
-            foreach (var file in files)
+            var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                LocalFiles.Add(new Directory() { Name = file.Name, Path = file.Path.ToString() });
+                Title = "Select file",
+                AllowMultiple = true,
+            });
+
+            if (files.Count > 0)
+            {
+                LocalFiles.Clear();
+                foreach (var file in files)
+                {
+                    LocalFiles.Add(new Directory() { Name = file.Name, Path = file.Path.AbsolutePath.ToString() });
+                }
             }
         }
+        catch(Exception ex)
+        {
+            Debug.WriteLine($"Open file error : {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't open the file.");
+            await errorMessageBox.ShowAsync();
+        }
+        
     }
     [RelayCommand]
-    private void RemoveFromServer()
+    private async Task RemoveFromServer()
     {
+        try
+        {
+            if (sftpClient.IsConnected)
+            {
+                sftpClient.DeleteFile(ServerPath);
 
+                var removeFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been removed.");
+                await removeFileMessageBox.ShowAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Remove file error : {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't delete the file.");
+            await errorMessageBox.ShowAsync();
+        }
     } 
     [RelayCommand]
-    private void MoveToServer()
+    private async Task MoveToServer()
     {
+        try
+        {
+            if (sftpClient.IsConnected)
+            {
+                sftpClient.ChangeDirectory(ServerPath);
+                foreach (var file in LocalFiles)
+                {
+                    using (var fileStream = new FileStream(file.Path, FileMode.Open))
+                    {
+                        Debug.WriteLine($"file: {file.Path}, {file.Name} - {fileStream.Length}");
+                        sftpClient.BufferSize = 4 * 1024;
+                        sftpClient.UploadFile(fileStream, Path.GetFileName(file.Path));
+                    }
+                }
 
+                var uploadFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been uploaded to the server.");
+                await uploadFileMessageBox.ShowAsync();
+            }
+        }
+        catch(Exception ex)
+        {
+            Debug.WriteLine($"Upload file error : {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't upload the file.");
+            await errorMessageBox.ShowAsync();
+        }
     } 
     [RelayCommand]
-    private void MoveToLocal()
+    private async Task MoveToLocal()
     {
+        try
+        {
+            if (sftpClient.IsConnected)
+            {
+                var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
 
+                var directory = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                {
+                    Title = "Select folder",
+                    AllowMultiple = false,
+                });
+
+                if (directory.Count > 0)
+                {
+                    foreach (var file in directory)
+                    {
+                        using (var fileStream = File.Create(file.Path.AbsolutePath.ToString()))
+                        {
+                            sftpClient.DownloadFile(ServerPath, fileStream);
+                        }
+                    }
+                }
+                
+                var downloadFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been downloaded from the server.");
+                await downloadFileMessageBox.ShowAsync();
+            }
+        }
+        catch(Exception ex)
+        {
+            Debug.WriteLine($"Download file error : {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't download the file.");
+            await errorMessageBox.ShowAsync();
+        }
+        
     }
 }

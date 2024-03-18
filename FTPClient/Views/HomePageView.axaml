@@ -20,7 +20,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="5" Margin="10">
                     <TextBox Text="{Binding Host}" Watermark="☁Host:" KeyDown="PasteKeyDownCommand"
                                    Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
-                    <TextBox Text="{Binding Username}" Watermark="🙍‍♂️Username:" KeyDown="PasteKeyDownCommand"
+                    <TextBox Text="{Binding Username}" Watermark="🙍‍Username:" KeyDown="PasteKeyDownCommand"
                              Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
                     <TextBox Text="{Binding Password}" Watermark="🗝Password:" PasswordChar="*" KeyDown="PasteKeyDownCommand"
                              Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
@@ -33,7 +33,7 @@
                 </StackPanel>
             </ScrollViewer>
         </Border>
-        <Border CornerRadius="10" Grid.Row="1" Grid.Column="0" 
+        <Border CornerRadius="10" Grid.Row="1" Grid.Column="0" IsEnabled="{Binding IsConnected}"
                 Background="{StaticResource Second}" Margin="10,10,5,10">
 			<StackPanel>
 				<ProgressBar Value="{Binding LocalProgressBarValue}" Minimum="0" Maximum="100" ShowProgressText="False"
@@ -61,7 +61,7 @@
 				</ScrollViewer>
 			</StackPanel>
         </Border>
-		<Border CornerRadius="5" Grid.Row="1" Grid.Column="1" 
+		<Border CornerRadius="5" Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsConnected}"
 				Background="{StaticResource Second}" Padding="5,10" HorizontalAlignment="Center" VerticalAlignment="Center">
 			<StackPanel Orientation="Vertical" Spacing="5" VerticalAlignment="Center">
 			    <Button Content="➖" Command="{Binding RemoveFromServerCommand}"
