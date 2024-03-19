@@ -6,9 +6,7 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -172,13 +170,13 @@ public partial class HomePageViewModel : ViewModelBase
     public HomePageViewModel()
     {
         _serverOperationService = ((App)Application.Current).Services.GetRequiredService<IServerOperationService>();
-        LocalFiles.Add(ShowDirectoriesAndFilesDefault(LocalPath));
+        LocalFiles.Add(GetAllLocalDirectories(LocalPath));
     }
 
     public HomePageViewModel(IServerOperationService serverOperationService)
     {
         _serverOperationService = serverOperationService;
-        LocalFiles.Add(ShowDirectoriesAndFilesDefault(LocalPath));
+        LocalFiles.Add(GetAllLocalDirectories(LocalPath));
     }
     
     [RelayCommand]
@@ -300,21 +298,20 @@ public partial class HomePageViewModel : ViewModelBase
         return directory;
     }
 
-    private Directory ShowDirectoriesAndFilesDefault(string path)
+    private Directory GetAllLocalDirectories(string path)
     {
         var directory = new Directory { Name = Path.GetFileName(path), Path = path };
         try
         {
-            var listOfFiles = System.IO.Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
+            var listOfFiles = System.IO.Directory.GetFileSystemEntries(path, "*");
             foreach (var file in listOfFiles)
             {
                 var fileName = Path.GetFileName(file);
-                file.Replace("file:///", "");
-                if (System.IO.Directory.Exists(file) && !fileName.StartsWith(".") && !fileName.StartsWith(".."))
+                if (System.IO.Directory.Exists(file) && !fileName.Equals(".") && !fileName.StartsWith(".."))
                 {
-                    directory.FileItems.Add(ShowDirectoriesAndFilesDefault(file));
+                    directory.FileItems.Add(GetAllLocalDirectories(file));
                 }
-                else if (!System.IO.Directory.Exists(file) && !fileName.StartsWith(".") && !fileName.StartsWith(".."))
+                else if (!System.IO.Directory.Exists(file) && !fileName.Equals(".") && !fileName.StartsWith(".."))
                 {
                     directory.FileItems.Add(new FileItem { Name = fileName, Path = file });
                 }
@@ -345,6 +342,7 @@ public partial class HomePageViewModel : ViewModelBase
 
             if (files.Count > 0)
             {
+                LocalProgressBarValue = 50;
                 LocalFiles.Clear();
                 foreach (var file in files)
                 {
@@ -358,19 +356,30 @@ public partial class HomePageViewModel : ViewModelBase
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't open the file.");
             await errorMessageBox.ShowAsync();
         }
+        finally
+        {
+            LocalProgressBarValue = 100;
+        }
         
     }
     [RelayCommand]
-    private async Task RemoveFromServer()
+    private async Task DeleteFileFromServer()
     {
         try
         {
             if (sftpClient.IsConnected)
             {
-                sftpClient.DeleteFile(ServerPath);
-
+                _serverOperationService.DeleteFile(sftpClient, ServerPath);
                 var removeFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been removed.");
                 await removeFileMessageBox.ShowAsync();
+
+                ServerFiles.Clear();
+                ServerPath = "/";
+                if (sftpClient.IsConnected)
+                {
+                    await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
+                    ServerProgressBarValue = 100;
+                }
             }
         }
         catch (Exception ex)
@@ -381,7 +390,7 @@ public partial class HomePageViewModel : ViewModelBase
         }
     } 
     [RelayCommand]
-    private async Task MoveToServer()
+    private async Task UploadFileToServer()
     {
         try
         {
@@ -392,14 +401,20 @@ public partial class HomePageViewModel : ViewModelBase
                 {
                     using (var fileStream = new FileStream(file.Path, FileMode.Open))
                     {
-                        Debug.WriteLine($"file: {file.Path}, {file.Name} - {fileStream.Length}");
-                        sftpClient.BufferSize = 4 * 1024;
-                        sftpClient.UploadFile(fileStream, Path.GetFileName(file.Path));
+                        _serverOperationService.UploadFile(sftpClient, fileStream, Path.GetFileName(file.Path));
                     }
                 }
 
                 var uploadFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been uploaded to the server.");
                 await uploadFileMessageBox.ShowAsync();
+
+                ServerFiles.Clear();
+                if (sftpClient.IsConnected)
+                {
+                    await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
+                    ServerProgressBarValue = 100;
+                }
+                ServerPath = "/";
             }
         }
         catch(Exception ex)
@@ -410,7 +425,7 @@ public partial class HomePageViewModel : ViewModelBase
         }
     } 
     [RelayCommand]
-    private async Task MoveToLocal()
+    private async Task DownloadToLocal()
     {
         try
         {
@@ -423,20 +438,27 @@ public partial class HomePageViewModel : ViewModelBase
                     Title = "Select folder",
                     AllowMultiple = false,
                 });
+                string localPathForNewFile = directory[0].Path.AbsolutePath.ToString();
 
-                if (directory.Count > 0)
+                if (!string.IsNullOrEmpty(localPathForNewFile))
                 {
-                    foreach (var file in directory)
+                    using (var fileStream = File.Create(localPathForNewFile))
                     {
-                        using (var fileStream = File.Create(file.Path.AbsolutePath.ToString()))
-                        {
-                            sftpClient.DownloadFile(ServerPath, fileStream);
-                        }
+                        _serverOperationService.DownloadFile(sftpClient, ServerPath, fileStream);
                     }
                 }
-                
+                else
+                {
+                    var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Selected path is empty.");
+                    await errorMessageBox.ShowAsync();
+                }
+               
                 var downloadFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been downloaded from the server.");
                 await downloadFileMessageBox.ShowAsync();
+
+                LocalFiles.Clear();
+                LocalFiles.Add(GetAllLocalDirectories(localPathForNewFile));
+                LocalPath = localPathForNewFile;
             }
         }
         catch(Exception ex)

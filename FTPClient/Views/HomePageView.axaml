@@ -64,11 +64,11 @@
 		<Border CornerRadius="5" Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsConnected}"
 				Background="{StaticResource Second}" Padding="5,10" HorizontalAlignment="Center" VerticalAlignment="Center">
 			<StackPanel Orientation="Vertical" Spacing="5" VerticalAlignment="Center">
-			    <Button Content="➖" Command="{Binding RemoveFromServerCommand}"
+			    <Button Content="➖" Command="{Binding DeleteFileFromServerCommand}"
                                 Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
-			    <Button Content="➙" Command="{Binding MoveToServerCommand}"
+			    <Button Content="➙" Command="{Binding UploadFileToServerCommand}"
                                 Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
-			    <Button Content="🡐" Command="{Binding MoveToLocalCommand}"
+			    <Button Content="🡐" Command="{Binding DownloadToLocalCommand}"
                                 Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
 			</StackPanel>
 		</Border>

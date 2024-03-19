@@ -48,4 +48,17 @@ public class ServerOperationService : IServerOperationService
             return new List<ISftpFile>();
         }
     }
+    public void UploadFile(SftpClient sftpClient, FileStream fileStream, string fileName)
+    {
+        sftpClient.BufferSize = 4 * 1024;
+        sftpClient.UploadFile(fileStream, fileName);
+    }
+    public void DeleteFile(SftpClient sftpClient, string serverFilePath)
+    {
+        sftpClient.DeleteFile(serverFilePath);
+    } 
+    public void DownloadFile(SftpClient sftpClient, string serverFilePath, FileStream fileStream)
+    {
+        sftpClient.DownloadFile(serverFilePath, fileStream);
+    }
 }
