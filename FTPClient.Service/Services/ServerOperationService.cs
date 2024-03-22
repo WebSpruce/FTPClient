@@ -12,7 +12,8 @@ public class ServerOperationService : IServerOperationService
         try
         {
             sftpClient = new SftpClient(new PasswordConnectionInfo(Host, int.Parse(Port), Username, Password));
-            await Task.Run(() => sftpClient.Connect());
+            var cancellationToken = new CancellationTokenSource();
+            await sftpClient.ConnectAsync(cancellationToken.Token);
             return sftpClient;
         }
         catch (Exception ex)
@@ -36,11 +37,12 @@ public class ServerOperationService : IServerOperationService
         }
     }
 
-    public IEnumerable<ISftpFile>? GetAllDirectories(SftpClient sftpClient, string path)
+    public async Task<IEnumerable<ISftpFile>>? GetAllDirectories(SftpClient sftpClient, string path)
     {
         try
         {
-            return sftpClient.ListDirectory(path); 
+            var cancellationToken = new CancellationTokenSource();
+            return await sftpClient.ListDirectoryAsync(path, cancellationToken.Token).ToListAsync(cancellationToken.Token); 
         }
         catch (Exception ex)
         {

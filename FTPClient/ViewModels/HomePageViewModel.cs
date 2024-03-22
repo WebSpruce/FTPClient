@@ -221,7 +221,7 @@ public partial class HomePageViewModel : ViewModelBase
                 sftpClient = await _serverOperationService.ConnectToServer(sftpClient, Host,  Username, Password, Port);
                 if (sftpClient.IsConnected)
                 {
-                    await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
+                    await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/").Result));
                 }
                 
                 var connectedMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Connected to the server.");
@@ -278,21 +278,21 @@ public partial class HomePageViewModel : ViewModelBase
         DisconnectBtnVisibility = !DisconnectBtnVisibility;
     }
 
-    private Directory GetAllDirectories(SftpClient sftpClient, string path)
+    private async Task<Directory> GetAllDirectories(SftpClient sftpClient, string path)
     {
         var directory = new Directory { Name = Path.GetFileName(path), Path = path };
         try
         {
-            var listOfFiles = _serverOperationService.GetAllDirectories(sftpClient, path);
+            var listOfFiles = await _serverOperationService.GetAllDirectories(sftpClient, path);
             ServerProgressBarValue = 50;
             foreach (var file in listOfFiles)
             {
                 if (file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
                 {
-                    directory.FileItems.Add(GetAllDirectories(sftpClient, file.FullName));
+                    directory.FileItems.Add(await GetAllDirectories(sftpClient, file.FullName));
                 }else if (!file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
                 {
-                    directory.FileItems.Add(new FileItem { Name = Path.GetFileName(file.FullName), Path = file.FullName });
+                    directory.FileItems.Add(new FileItem { Name = Path.GetFileName(file.FullName), Path = file.FullName, Size = file.Attributes.Size.ToString("N0") });
                 }
             }
         }
@@ -387,7 +387,7 @@ public partial class HomePageViewModel : ViewModelBase
                 ServerPath = "/";
                 if (sftpClient.IsConnected)
                 {
-                    await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
+                    ServerFiles.Add( await GetAllDirectories(sftpClient, "/"));
                     ServerProgressBarValue = 100;
                 }
             }
@@ -421,7 +421,7 @@ public partial class HomePageViewModel : ViewModelBase
                 ServerFiles.Clear();
                 if (sftpClient.IsConnected)
                 {
-                    await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/")));
+                    ServerFiles.Add(await GetAllDirectories(sftpClient, "/"));
                     ServerProgressBarValue = 100;
                 }
                 ServerPath = "/";

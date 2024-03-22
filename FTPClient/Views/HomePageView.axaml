@@ -97,11 +97,14 @@
                               Background="{StaticResource Second}" Margin="5" Padding="0" >
                         <TreeView.DataTemplates>
                             <TreeDataTemplate DataType="models:Directory" ItemsSource="{Binding FileItems}">
-                                    <TextBlock Text="{Binding Name}"/>
+                                    <TextBlock Text="{Binding Name}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="White"/>
                             </TreeDataTemplate>
                             <DataTemplate DataType="models:FileItem">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Name}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Text="{Binding Name}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="White"/>
+									<Border CornerRadius="10" Background="{StaticResource Accent}" Padding="3">
+                                        <TextBlock Text="{Binding Size, StringFormat='Size: {0}'}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" FontSize="10" Foreground="White"/>
+									</Border>
                                 </StackPanel>
                             </DataTemplate>
                         </TreeView.DataTemplates>
