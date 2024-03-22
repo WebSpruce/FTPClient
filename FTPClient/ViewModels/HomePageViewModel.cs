@@ -12,6 +12,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
+using FTPClient.Service.Services;
 using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
 using Renci.SshNet;
@@ -167,15 +168,24 @@ public partial class HomePageViewModel : ViewModelBase
 
 
     private readonly IServerOperationService _serverOperationService;
+    private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
+    public static HomePageViewModel instance;
     public HomePageViewModel()
     {
+        instance = this;
         _serverOperationService = ((App)Application.Current).Services.GetRequiredService<IServerOperationService>();
+        _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
+        LocalPath = _filesAndDirectoriesService.GetUserSettings();
         LocalFiles.Add(GetAllLocalDirectories(LocalPath));
     }
 
-    public HomePageViewModel(IServerOperationService serverOperationService)
+    public HomePageViewModel(IServerOperationService serverOperationService,
+        IFilesAndDirectoriesService filesAndDirectoriesService)
     {
+        instance = this;
         _serverOperationService = serverOperationService;
+        _filesAndDirectoriesService = filesAndDirectoriesService;
+        LocalPath = _filesAndDirectoriesService.GetUserSettings();
         LocalFiles.Add(GetAllLocalDirectories(LocalPath));
     }
     

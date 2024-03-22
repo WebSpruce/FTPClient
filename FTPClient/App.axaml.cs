@@ -37,12 +37,17 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
         services.AddSingleton<IServerOperationService, ServerOperationService>();
+        services.AddSingleton<IFilesAndDirectoriesService, FilesAndDirectoriesService>();
         
         services.AddTransient<HomePageViewModel>();
         services.AddSingleton<MainWindowViewModel>();
+        services.AddSingleton<SettingsPageViewModel>();
+        services.AddTransient<HistoryPageViewModel>();
         
         services.AddSingleton<HomePageView>();
         services.AddSingleton<MainWindow>();
+        services.AddSingleton<SettingsPageView>();
+        services.AddSingleton<HistoryPageView>();
         Services = services.BuildServiceProvider();
     }
 }

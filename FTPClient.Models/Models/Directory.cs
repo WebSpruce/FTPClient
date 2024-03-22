@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace FTPClient.Models;
 
 public class Directory : FileItem

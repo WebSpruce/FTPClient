@@ -36,6 +36,8 @@
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="0" IsEnabled="{Binding IsConnected}"
                 Background="{StaticResource Second}" Margin="10,10,5,10">
 			<StackPanel>
+				<Label Content="Local machine"
+					   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>
 				<ProgressBar Value="{Binding LocalProgressBarValue}" Minimum="0" Maximum="100" ShowProgressText="False"
                              Height="3" Foreground="{StaticResource Accent2}"></ProgressBar>
 				<StackPanel Orientation="Horizontal">
@@ -64,22 +66,33 @@
 		<Border CornerRadius="5" Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsConnected}"
 				Background="{StaticResource Second}" Padding="5,10" HorizontalAlignment="Center" VerticalAlignment="Center">
 			<StackPanel Orientation="Vertical" Spacing="5" VerticalAlignment="Center">
-			    <Button Content="➖" Command="{Binding DeleteFileFromServerCommand}"
-                                Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
-			    <Button Content="➙" Command="{Binding UploadFileToServerCommand}"
-                                Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
-			    <Button Content="🡐" Command="{Binding DownloadToLocalCommand}"
-                                Foreground="{StaticResource Second}" Background="{StaticResource Accent}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="21" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0"></Button>
+			    <Button Command="{Binding DeleteFileFromServerCommand}"
+                                Foreground="{StaticResource Second}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="24" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
+					<PathIcon Data="{StaticResource DeleteRegular}"
+                                      Foreground="{StaticResource Accent}" Width="16" Height="16" Margin="3"></PathIcon>
+				</Button>
+			    <Button Command="{Binding UploadFileToServerCommand}"
+                                Foreground="{StaticResource Second}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="24" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
+					<PathIcon Data="{StaticResource UploadRegular}"
+                                      Foreground="{StaticResource Accent}" Width="16" Height="16" Margin="3"></PathIcon>
+				</Button>
+			    <Button Command="{Binding DownloadToLocalCommand}"
+                                Foreground="{StaticResource Second}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="24" Height="21" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
+					<PathIcon Data="{StaticResource DownloadRegular}"
+                                      Foreground="{StaticResource Accent}" Width="16" Height="16" Margin="3"></PathIcon>
+				</Button>
 			</StackPanel>
 		</Border>
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="2" 
                 Background="{StaticResource Second}" Margin="5,10,10,10">
             <StackPanel>
+				<Label Content="Server"
+					   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>
                 <ProgressBar Value="{Binding ServerProgressBarValue}" Minimum="0" Maximum="100" ShowProgressText="False"
                              Height="3" Foreground="{StaticResource Accent2}"></ProgressBar>
                 <TextBox Text="{Binding ServerPath}" Watermark="⚫Path:" IsReadOnly="True"
                          Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="560" Padding="0" Margin="0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="550" Padding="0" Margin="0">
                     <TreeView ItemsSource="{Binding ServerFiles}" SelectedItem="{Binding SelectedServerItem}" AutoScrollToSelectedItem="True"
                               Background="{StaticResource Second}" Margin="5" Padding="0" >
                         <TreeView.DataTemplates>

@@ -3,6 +3,24 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="FTPClient.Views.SettingsPageView">
-    Welcome to SETTINGS!
+             x:Class="FTPClient.Views.SettingsPageView"
+			 xmlns:vm="using:FTPClient.ViewModels"
+			 x:DataType="vm:SettingsPageViewModel"
+			 Background="#2c2f33">
+	<StackPanel>
+		<Label Content="FTPClient Settings"
+			HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Black" Foreground="{StaticResource Accent}"></Label>
+		<Border CornerRadius="10" Background="{StaticResource Second}" Height="400" Margin="10" Padding="5">
+			<StackPanel Background="{StaticResource Second}">
+				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+					<Label Content="Set default path in local machine treeview"
+						   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>
+					<TextBox Text="{Binding LocalPath}" Watermark="⚫Path:" IsReadOnly="True"
+                         Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
+					<Button Content="📁" Command="{Binding OpenFolderCommand}"
+							Foreground="{StaticResource Accent}" Background="{StaticResource Main}"></Button>
+				</StackPanel>
+			</StackPanel>
+		</Border>
+	</StackPanel>
 </UserControl>
