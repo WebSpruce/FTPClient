@@ -9,9 +9,12 @@ public partial class MainWindow : Window
 {
     private bool _mouseDownForWindowMoving = false;
     private PointerPoint _originalPoint;
+    public bool isWindowHover = false;
+    public static MainWindow instance;
     public MainWindow()
     {
         InitializeComponent();
+        instance = this;
         DataContext = new MainWindowViewModel();
     }
 
@@ -28,8 +31,18 @@ public partial class MainWindow : Window
     {
         if (WindowState == WindowState.Maximized || WindowState == WindowState.FullScreen) return;
 
-        _mouseDownForWindowMoving = true;
-        _originalPoint = e.GetCurrentPoint(this);
+        if (isWindowHover)
+        {
+            _mouseDownForWindowMoving = false;
+            return;
+        }
+        else
+        {
+            _mouseDownForWindowMoving = true;
+            _originalPoint = e.GetCurrentPoint(this);
+        }
+
+       
     }
 
     private void InputElement_OnPointerReleased(object? sender, PointerReleasedEventArgs e)

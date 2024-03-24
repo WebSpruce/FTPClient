@@ -16,8 +16,8 @@
         IsHitTestVisible="True"
         PointerMoved="InputElement_OnPointerMoved"
         PointerPressed="InputElement_OnPointerPressed"
-        PointerReleased="InputElement_OnPointerReleased"
-        >
+        PointerReleased="InputElement_OnPointerReleased"       
+		>
     
     <Border CornerRadius="10" Padding="5" Background="{StaticResource Second}">
         <SplitView 

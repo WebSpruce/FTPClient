@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Service.Services;
 using FTPClient.ViewModels;
@@ -12,8 +14,14 @@ using Microsoft.Extensions.DependencyInjection;
 namespace FTPClient;
 
 public partial class App : Application
-{ 
+{
+    internal string currentProfileName = string.Empty;
     public IServiceProvider Services { get; private set; }
+    public static App instance;
+    public App()
+    {
+        instance = this;
+    }
     public override void Initialize()
     {
         ConfigureServices();
@@ -29,6 +37,16 @@ public partial class App : Application
             {
                 DataContext = new MainWindowViewModel(),
             };
+        }
+
+        IFilesAndDirectoriesService _filesAndDirectoriesService = new FilesAndDirectoriesService();
+        string LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        List<Profile> allProfiles = _filesAndDirectoriesService.GetUserSettings();
+        if (string.IsNullOrEmpty(allProfiles[0].Name))
+        {
+            _filesAndDirectoriesService.SaveUserConfigFile("Default", LocalPath);
+            _filesAndDirectoriesService.SaveCurrentProfile();
         }
 
         base.OnFrameworkInitializationCompleted();

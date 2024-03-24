@@ -11,10 +11,29 @@
 		<Label Content="FTPClient Settings"
 			HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Black" Foreground="{StaticResource Accent}"></Label>
 		<Border CornerRadius="10" Background="{StaticResource Second}" Height="400" Margin="10" Padding="5">
-			<StackPanel Background="{StaticResource Second}">
+			<StackPanel Orientation="Vertical" Spacing="10" Background="{StaticResource Second}" HorizontalAlignment="Center">
+				<TextBlock
+					   HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" Foreground="{StaticResource Accent}">
+					<Run Text="Current Settings Profile:" FontWeight="Regular"></Run>
+					<Run Text="{Binding CurrentProfile}" FontWeight="Medium"></Run>
+				</TextBlock>
+				<ComboBox ItemsSource="{Binding Profiles}" SelectedIndex="{Binding SelectedIndex}" PointerPressed="ComboBox_PointerPressed" PointerExited="ComboBox_PointerExited"
+						  Background="{StaticResource Main}" CornerRadius="10" HorizontalAlignment="Center" HorizontalContentAlignment="Left" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
+					<ComboBox.ItemTemplate>
+						<DataTemplate>
+							<StackPanel Orientation="Horizontal">
+								<Label Content="{Binding Name}"
+									   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Foreground="{StaticResource Accent}"></Label>
+							</StackPanel>
+						</DataTemplate>
+					</ComboBox.ItemTemplate>
+				</ComboBox>
+				<Button Content="Change profile" Command="{Binding ChangeProfileCommand}"
+						HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+				<Separator BorderBrush="Red" VerticalAlignment="Center"></Separator>
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 					<Label Content="Set default path in local machine treeview"
-						   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>
+						   HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>
 					<TextBox Text="{Binding LocalPath}" Watermark="⚫Path:" IsReadOnly="True"
                          Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
 					<Button Content="📁" Command="{Binding OpenFolderCommand}"

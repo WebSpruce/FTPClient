@@ -8,18 +8,41 @@ namespace FTPClient.Service.Services
     public class FilesAndDirectoriesService : IFilesAndDirectoriesService
     {
         private static string settingsFilePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/userSettings.json";
-        public void SaveUserConfigFile(string localPath)
+        private static string profileFilePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/profile.json";
+        public void SaveUserConfigFile(string profileName, string localPath)
         {
             try
             {
-                List<UserSettings> userSettings = new List<UserSettings>();
-                userSettings.Add(new UserSettings
+                var allProfiles = GetUserSettings();
+                var indexOfMyProfile = -1;
+                foreach (var profile in allProfiles)
                 {
-                    LocalPath = localPath,
-                });
+                    if(profile.Name == profileName)
+                    {
+                        indexOfMyProfile  = allProfiles.IndexOf(profile);
+                    }
+                }
+                if (indexOfMyProfile > -1)
+                {
+                    allProfiles[indexOfMyProfile].ProfileSettings.LocalPath = localPath;
+                    string jsonFile = JsonSerializer.Serialize(allProfiles);
+                    File.WriteAllText(settingsFilePath, jsonFile);
+                }
+                else
+                {
+                    Profile newProfile = new Profile()
+                    {
+                        Name = profileName,
+                        ProfileSettings = new ProfileSettings
+                        {
+                            LocalPath = localPath,
+                        }
+                    };
+                    allProfiles.Add(newProfile);
 
-                string jsonFile = JsonSerializer.Serialize(userSettings);
-                File.WriteAllText(settingsFilePath, jsonFile);
+                    string jsonFile = JsonSerializer.Serialize(allProfiles);
+                    File.WriteAllText(settingsFilePath, jsonFile);
+                }
             }
             catch(Exception ex)
             {
@@ -27,17 +50,84 @@ namespace FTPClient.Service.Services
             }
             
         }
-        public string GetUserSettings()
+        public Profile GetUserSettings(string profileName)
         {
             try
             {
                 var userSettings = File.ReadAllText(settingsFilePath);
-                var settings = JsonSerializer.Deserialize<List<UserSettings>>(userSettings);
-                return settings[0].LocalPath ?? string.Empty;
+                var settings = JsonSerializer.Deserialize<List<Profile>>(userSettings);
+                foreach( Profile profile in settings )
+                {
+                    if(profile.Name == profileName)
+                    {
+                        return profile ?? new Profile();
+                    }
+                }
+                return new Profile();
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"FilesAndDirectoriesService GetUserSettings error: {ex}");
+                return new Profile();
+            }
+        }
+        public List<Profile> GetUserSettings()
+        {
+            try
+            {
+                if (!File.Exists(settingsFilePath))
+                {
+                    SaveUserConfigFile("Default", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+                }
+                var userSettings = File.ReadAllText(settingsFilePath);
+                var settings = JsonSerializer.Deserialize<List<Profile>>(userSettings);
+                return settings ?? new List<Profile>();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"FilesAndDirectoriesService GetUserSettings error: {ex}");
+                return new List<Profile>();
+            }
+        }
+        public void SaveCurrentProfile(string profileName)
+        {
+            try
+            {
+                string jsonFile = JsonSerializer.Serialize(profileName);
+                File.WriteAllText(profileFilePath, jsonFile);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"FilesAndDirectoriesService SaveCurrentProfileFile error: {ex}");
+            }
+        }
+        public void SaveCurrentProfile()
+        {
+            try
+            {
+                string jsonFile = JsonSerializer.Serialize("Default");
+                File.WriteAllText(profileFilePath, jsonFile);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"FilesAndDirectoriesService SaveCurrentProfileFile error: {ex}");
+            }
+        }
+        public string GetCurrentProfile()
+        {
+            try
+            {
+                if (!File.Exists(profileFilePath))
+                {
+                    SaveCurrentProfile("Default");
+                }
+                var currentProfileJson = File.ReadAllText(profileFilePath);
+                var currentProfile = JsonSerializer.Deserialize<string>(currentProfileJson);
+                return currentProfile ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"FilesAndDirectoriesService GetCurrentProfile error: {ex}");
                 return string.Empty;
             }
         }

@@ -25,5 +25,4 @@ public partial class HomePageView : UserControl
             }
         }
     }
-
 }
