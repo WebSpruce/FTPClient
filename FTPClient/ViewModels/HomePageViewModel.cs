@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Shapes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -427,7 +428,7 @@ public partial class HomePageViewModel : ViewModelBase
 
                 if (!string.IsNullOrEmpty(localPathForNewFile))
                 {
-                    using (var fileStream = File.Create(localPathForNewFile))
+                    using (var fileStream = File.Create($"{localPathForNewFile}/{Path.GetFileName(ServerPath)}"))
                     {
                         _serverOperationService.DownloadFile(sftpClient, ServerPath, fileStream);
                     }
