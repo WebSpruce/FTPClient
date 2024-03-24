@@ -7,7 +7,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FTPClient.Service.Interfaces;
+using FTPClient.Service.Services;
 using FTPClient.Views;
+using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 
@@ -23,6 +26,9 @@ public partial class MainWindowViewModel : ViewModelBase
     
     [ObservableProperty] 
     private ListItemTemplate? _selectedListItem;
+
+    [ObservableProperty] 
+    private string? _currentProfileIcon;
     
     public ObservableCollection<ListItemTemplate> MainMenuItems { get; } = new()
     {
@@ -34,7 +40,14 @@ public partial class MainWindowViewModel : ViewModelBase
         new ListItemTemplate(typeof(SettingsPageViewModel), "SettingsRegular"),
         new ListItemTemplate(typeof(ExitPageViewModel), "ExitRegular"),
     };
-
+    public static MainWindowViewModel instance;
+    public MainWindowViewModel()
+    {
+        instance = this;
+        var _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
+        var currentProfile = _filesAndDirectoriesService.GetCurrentProfile();
+        CurrentProfileIcon = currentProfile.Substring(0,1).ToUpper();
+    }
     async partial void OnSelectedListItemChanged(ListItemTemplate? item)
     {
         if (item is null)

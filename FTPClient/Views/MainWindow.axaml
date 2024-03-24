@@ -46,6 +46,8 @@
                             </ListBox>
                         </StackPanel>
                         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom">
+							<Label Content="{Binding CurrentProfileIcon}"
+								   CornerRadius="10" Foreground="{StaticResource Accent}" Background="{StaticResource Second}" FontFamily="{StaticResource MadeInfinity}" FontSize="17" FontWeight="Regular" HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center" Width="40" Margin="4,0,0,0" Padding="10,5"></Label>
                             <ListBox ItemsSource="{Binding FooterMenuItems}" SelectedItem="{Binding SelectedListItem}"
                                      Background="{StaticResource Main}" VerticalAlignment="Bottom">
                                 <ListBox.ItemTemplate>

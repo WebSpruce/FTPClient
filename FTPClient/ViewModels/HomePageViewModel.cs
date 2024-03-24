@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Shapes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,9 +15,11 @@ using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using Directory = FTPClient.Models.Directory;
+using Path = System.IO.Path;
 
 namespace FTPClient.ViewModels;
 
@@ -179,7 +182,6 @@ public partial class HomePageViewModel : ViewModelBase
         var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
         LocalPath = currentProfile.ProfileSettings.LocalPath;
-        LocalFiles.Add(GetAllLocalDirectories(LocalPath));
     }
     
     [RelayCommand]
@@ -300,36 +302,6 @@ public partial class HomePageViewModel : ViewModelBase
 
         return directory;
     }
-
-    private Directory GetAllLocalDirectories(string path)
-    {
-        var directory = new Directory { Name = Path.GetFileName(path), Path = path };
-        try
-        {
-            var listOfFiles = System.IO.Directory.GetFileSystemEntries(path, "*");
-            foreach (var file in listOfFiles)
-            {
-                var fileName = Path.GetFileName(file);
-                if (System.IO.Directory.Exists(file) && !fileName.Equals(".") && !fileName.StartsWith(".."))
-                {
-                    directory.FileItems.Add(GetAllLocalDirectories(file));
-                }
-                else if (!System.IO.Directory.Exists(file) && !fileName.Equals(".") && !fileName.StartsWith(".."))
-                {
-                    directory.FileItems.Add(new FileItem { Name = fileName, Path = file });
-                }
-            }
-        }
-        catch (SftpPermissionDeniedException ex)
-        {
-            Debug.WriteLine($"Permission denied for directory: {path}. {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"GetAllDirectories error: {ex}");
-        }
-        return directory;
-    }
     [RelayCommand]
     private async void OpenFolder()
     {
@@ -337,10 +309,14 @@ public partial class HomePageViewModel : ViewModelBase
         {
             var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
 
+            var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
+            var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
+
             var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 Title = "Select file",
                 AllowMultiple = true,
+                SuggestedStartLocation = await window.StorageProvider.TryGetFolderFromPathAsync(currentProfile.ProfileSettings.LocalPath)
             });
 
             if (files.Count > 0)
@@ -370,18 +346,24 @@ public partial class HomePageViewModel : ViewModelBase
     {
         try
         {
-            if (sftpClient.IsConnected)
+            var connectedMessageBox = MessageBoxManager.GetMessageBoxStandard("Warning", "Are you sure to delete this file?", ButtonEnum.YesNo);
+            var result = await connectedMessageBox.ShowAsync();
+            if (result == ButtonResult.Yes)
             {
-                _serverOperationService.DeleteFile(sftpClient, ServerPath);
-                var removeFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been removed.");
-                await removeFileMessageBox.ShowAsync();
 
-                ServerFiles.Clear();
-                ServerPath = "/";
                 if (sftpClient.IsConnected)
                 {
-                    ServerFiles.Add( await GetAllDirectories(sftpClient, "/"));
-                    ServerProgressBarValue = 100;
+                    _serverOperationService.DeleteFile(sftpClient, ServerPath);
+                    var removeFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been removed.");
+                    await removeFileMessageBox.ShowAsync();
+
+                    ServerFiles.Clear();
+                    ServerPath = "/";
+                    if (sftpClient.IsConnected)
+                    {
+                        ServerFiles.Add(await GetAllDirectories(sftpClient, "/"));
+                        ServerProgressBarValue = 100;
+                    }
                 }
             }
         }
@@ -460,7 +442,6 @@ public partial class HomePageViewModel : ViewModelBase
                 await downloadFileMessageBox.ShowAsync();
 
                 LocalFiles.Clear();
-                LocalFiles.Add(GetAllLocalDirectories(localPathForNewFile));
                 LocalPath = localPathForNewFile;
             }
         }

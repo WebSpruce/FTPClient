@@ -7,6 +7,7 @@ using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Service.Services;
 using MsBox.Avalonia;
+using MsBox.Avalonia.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,6 +24,10 @@ public partial class SettingsPageViewModel : ViewModelBase
     private string _currentProfile = string.Empty;
     [ObservableProperty]
     private List<Profile> _profiles = new();
+    [ObservableProperty]
+    private bool _isTextBoxVisible;
+    [ObservableProperty]
+    private string _newProfile;
 
     [ObservableProperty]
     private int _selectedIndex;
@@ -87,7 +92,45 @@ public partial class SettingsPageViewModel : ViewModelBase
         _filesAndDirectoriesService.SaveCurrentProfile(profile.Name);
 
         CurrentProfile = profile.Name;
-
         LocalPath = _filesAndDirectoriesService.GetUserSettings(CurrentProfile).ProfileSettings.LocalPath;
+
+        MainWindowViewModel.instance.CurrentProfileIcon = CurrentProfile.Substring(0, 1).ToUpper();
+    }
+    [RelayCommand]
+    private void ShowAddProfileForm()
+    {
+        IsTextBoxVisible = true;
+    }
+    [RelayCommand]
+    private async Task AddProfile()
+    {
+        try
+        {
+            _filesAndDirectoriesService.AddNewProfile(NewProfile);
+            IsTextBoxVisible = false;
+            SetProfilesCombobox();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SettingsPage AddProfile error: {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Error while adding a new profile.");
+            await errorMessageBox.ShowAsync();
+        }
+    }
+    [RelayCommand]
+    private async Task DeleteProfile()
+    {
+        try
+        {
+            var profile = Profiles[SelectedIndex];
+            _filesAndDirectoriesService.DeleteProfile(profile.Name);
+            SetProfilesCombobox();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SettingsPage DeleteProfile error: {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Error while removing a new profile.");
+            await errorMessageBox.ShowAsync();
+        }
     }
 }

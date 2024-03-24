@@ -17,19 +17,35 @@
 					<Run Text="Current Settings Profile:" FontWeight="Regular"></Run>
 					<Run Text="{Binding CurrentProfile}" FontWeight="Medium"></Run>
 				</TextBlock>
-				<ComboBox ItemsSource="{Binding Profiles}" SelectedIndex="{Binding SelectedIndex}" PointerPressed="ComboBox_PointerPressed" PointerExited="ComboBox_PointerExited"
-						  Background="{StaticResource Main}" CornerRadius="10" HorizontalAlignment="Center" HorizontalContentAlignment="Left" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
-					<ComboBox.ItemTemplate>
-						<DataTemplate>
-							<StackPanel Orientation="Horizontal">
-								<Label Content="{Binding Name}"
-									   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Foreground="{StaticResource Accent}"></Label>
-							</StackPanel>
-						</DataTemplate>
-					</ComboBox.ItemTemplate>
-				</ComboBox>
-				<Button Content="Change profile" Command="{Binding ChangeProfileCommand}"
-						HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+					<Button Command="{Binding ShowAddProfileFormCommand}"
+							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="30" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
+						<PathIcon Data="{StaticResource AddRegular}"
+                                      Foreground="{StaticResource Accent}" Width="20" Height="20" Margin="3"></PathIcon>
+					</Button>
+					<TextBox Text="{Binding NewProfile}" IsVisible="{Binding IsTextBoxVisible}" Watermark="✏Profile name"
+							  Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
+					<Button Content="Save" Command="{Binding AddProfileCommand}" IsVisible="{Binding IsTextBoxVisible}"
+							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="70" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+					<Button Command="{Binding DeleteProfileCommand}"
+							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="30" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
+						<PathIcon Data="{StaticResource DeleteRegular}"
+                                      Foreground="{StaticResource Accent}" Width="20" Height="20" Margin="3"></PathIcon>
+					</Button>
+					<ComboBox ItemsSource="{Binding Profiles}" SelectedIndex="{Binding SelectedIndex}" PointerPressed="ComboBox_PointerPressed" PointerExited="ComboBox_PointerExited"
+							  Background="{StaticResource Main}" CornerRadius="10" HorizontalAlignment="Center" HorizontalContentAlignment="Left" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<StackPanel Orientation="Horizontal">
+									<Label Content="{Binding Name}"
+										   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Foreground="{StaticResource Accent}"></Label>
+								</StackPanel>
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+					<Button Content="Change profile" Command="{Binding ChangeProfileCommand}"
+							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+				</StackPanel>
 				<Separator BorderBrush="Red" VerticalAlignment="Center"></Separator>
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 					<Label Content="Set default path in local machine treeview"

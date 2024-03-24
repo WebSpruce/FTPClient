@@ -131,5 +131,54 @@ namespace FTPClient.Service.Services
                 return string.Empty;
             }
         }
+        public void AddNewProfile(string newProfileName)
+        {
+            try
+            {
+                var profiles = GetUserSettings();
+                bool isAlreadyExists = false;
+                foreach(var profile in profiles)
+                {
+                    if(profile.Name == newProfileName)
+                    {
+                        isAlreadyExists = true;
+                    }
+                }
+                if (!isAlreadyExists)
+                {
+                    profiles.Add(new Profile()
+                    {
+                        Name = newProfileName,
+                        ProfileSettings = new ProfileSettings()
+                        {
+                            LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+                        }
+                    });
+                    string jsonFile = JsonSerializer.Serialize(profiles);
+                    File.WriteAllText(settingsFilePath, jsonFile);
+                }
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine($"FilesAndDirectoriesService AddNewProfile error: {ex}");
+            }
+        } 
+        public void DeleteProfile(string profileName)
+        {
+            try
+            {
+                var profiles = GetUserSettings();
+                var profile = profiles.Where(p => p.Name == profileName).FirstOrDefault();
+                int indexOfProfile = profiles.IndexOf(profile);
+                profiles.RemoveAt(indexOfProfile);
+
+                string jsonFile = JsonSerializer.Serialize(profiles);
+                File.WriteAllText(settingsFilePath, jsonFile);
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine($"FilesAndDirectoriesService AddNewProfile error: {ex}");
+            }
+        }
     }
 }

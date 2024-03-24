@@ -10,5 +10,7 @@ namespace FTPClient.Service.Interfaces
         void SaveCurrentProfile(string profileName);
         void SaveCurrentProfile();
         string GetCurrentProfile();
+        void AddNewProfile(string newProfileName);
+        void DeleteProfile(string profileName);
     }
 }
