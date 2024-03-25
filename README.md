@@ -1,5 +1,7 @@
 ## 📸FTP Client
 
+<img src="https://github.com/WebSpruce/FTPClient/blob/main/AppScreenshots/ftp_client.gif?raw=true" height="400" alt="FTP Client Gif">
+
 ### 📙Features
 
 The FTP client allows you to connect to the server quickly, securely and conveniently via the **SFTP protocol**. 🌐
