@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FTPClient", "FTPClient\FTPC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FTPClient.Service", "FTPClient.Service\FTPClient.Service.csproj", "{2525373C-2940-4D71-9467-7CA0B33544B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FTPClient.Models", "FTPClient.Models\FTPClient.Models.csproj", "{BA73BD96-8F7D-492C-B95D-9A8D1106AE04}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FTPClient.Models", "FTPClient.Models\FTPClient.Models.csproj", "{BA73BD96-8F7D-492C-B95D-9A8D1106AE04}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FTPClient.Database", "FTPClient.Database\FTPClient.Database.csproj", "{06EE1897-1D6A-456F-82C5-2208B84C786D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{BA73BD96-8F7D-492C-B95D-9A8D1106AE04}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA73BD96-8F7D-492C-B95D-9A8D1106AE04}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA73BD96-8F7D-492C-B95D-9A8D1106AE04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06EE1897-1D6A-456F-82C5-2208B84C786D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06EE1897-1D6A-456F-82C5-2208B84C786D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06EE1897-1D6A-456F-82C5-2208B84C786D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06EE1897-1D6A-456F-82C5-2208B84C786D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using FTPClient.Models.Models;
 using FTPClient.ViewModels;
 
 namespace FTPClient.Views;
@@ -12,6 +13,12 @@ public partial class HomePageView : UserControl
         InitializeComponent();
         instance = this;
         DataContext = new HomePageViewModel();
+    }
+    public HomePageView(Connection connection)
+    {
+        InitializeComponent();
+        instance = this;
+        DataContext = new HomePageViewModel(connection);
     }
     private async void PasteKeyDownCommand(object sender, KeyEventArgs e)
     {

@@ -46,7 +46,7 @@
 					<Button Content="Change profile" Command="{Binding ChangeProfileCommand}"
 							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
 				</StackPanel>
-				<Separator BorderBrush="Red" VerticalAlignment="Center"></Separator>
+				<Separator VerticalAlignment="Center"></Separator>
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 					<Label Content="Set default path in local machine treeview"
 						   HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>

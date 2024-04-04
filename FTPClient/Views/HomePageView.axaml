@@ -30,6 +30,8 @@
                             Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
                     <Button Content="X" Command="{Binding DisconnectFromServerCommand}" IsVisible="{Binding DisconnectBtnVisibility}"
                             Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="40" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+					<Button Content="Save Connection" Command="{Binding SaveConnectionCommand}" IsVisible="{Binding DisconnectBtnVisibility}"
+                            Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
                 </StackPanel>
             </ScrollViewer>
         </Border>

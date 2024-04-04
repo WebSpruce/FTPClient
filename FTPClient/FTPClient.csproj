@@ -34,6 +34,7 @@
 
 
     <ItemGroup>
+      <ProjectReference Include="..\FTPClient.Database\FTPClient.Database.csproj" />
       <ProjectReference Include="..\FTPClient.Models\FTPClient.Models.csproj" />
       <ProjectReference Include="..\FTPClient.Service\FTPClient.Service.csproj" />
     </ItemGroup>

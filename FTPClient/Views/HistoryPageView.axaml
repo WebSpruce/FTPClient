@@ -3,6 +3,54 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="FTPClient.Views.HistoryPageView">
-    Welcome to History!
+             x:Class="FTPClient.Views.HistoryPageView"
+			 xmlns:vm="using:FTPClient.ViewModels"
+			 x:DataType="vm:HistoryPageViewModel"
+             Background="#2c2f33">
+
+	<Border CornerRadius="10" Background="{StaticResource Second}" Margin="5">
+		<StackPanel Orientation="Vertical" Margin="10">
+			<Label Content="History of yours connections"
+				   Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Bold" HorizontalAlignment="Center"></Label>
+			<Separator VerticalAlignment="Center"></Separator>
+			<ListBox ItemsSource="{Binding Connections}" Margin="10,0" Background="Red">
+				<ListBox.Template>
+					<ControlTemplate>
+						<DockPanel LastChildFill="True">
+							<Grid DockPanel.Dock="Top" ColumnDefinitions="150,60,150,*">
+								<Label Content="Host" Grid.Column="0"
+									Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Bold" HorizontalContentAlignment="Left"></Label>
+								<Label Content="Port" Grid.Column="1"
+									Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Bold" HorizontalContentAlignment="Left"></Label>
+								<Label Content="Username" Grid.Column="2"
+									Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Bold" HorizontalContentAlignment="Left"></Label>
+								<Label Content="Operations" Grid.Column="3"
+									Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Bold" HorizontalContentAlignment="Left"></Label>
+							</Grid>
+							<ItemsPresenter></ItemsPresenter>
+						</DockPanel>
+					</ControlTemplate>
+				</ListBox.Template>
+				<ListBox.ItemTemplate>
+					<DataTemplate>
+						<Grid ColumnDefinitions="150,60,150,*" >
+							<Label Content="{Binding Host}" Grid.Column="0"
+								Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" ></Label>
+							<Label Content="{Binding Port}" Grid.Column="1"
+								Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" ></Label>
+							<Label Content="{Binding Username}" Grid.Column="2"
+								Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" ></Label>
+							<StackPanel Orientation="Horizontal" Grid.Column="3" Spacing="10">
+								<Button Content="Remove" Click="RemoveBtn_Click"
+									Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="70" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+								<Button Content="Connect" Click="ConnectBtn_Click"
+									Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="70" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+							</StackPanel>
+						</Grid>
+					</DataTemplate>
+				</ListBox.ItemTemplate>
+			</ListBox>
+		</StackPanel>
+	</Border>
+
 </UserControl>

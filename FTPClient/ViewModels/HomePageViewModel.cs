@@ -7,12 +7,12 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Controls.Documents;
-using Avalonia.Controls.Shapes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FTPClient.Database.Interfaces;
 using FTPClient.Models;
+using FTPClient.Models.Models;
 using FTPClient.Service.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
@@ -173,16 +173,31 @@ public partial class HomePageViewModel : ViewModelBase
 
     private readonly IServerOperationService _serverOperationService;
     private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
+    private readonly IConnectionsRepository _connectionsRepository;
     public static HomePageViewModel instance;
     public HomePageViewModel()
     {
         instance = this;
         _serverOperationService = ((App)Application.Current).Services.GetRequiredService<IServerOperationService>();
         _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
+        _connectionsRepository = ((App)Application.Current).Services.GetRequiredService<IConnectionsRepository>();
 
         var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
         LocalPath = currentProfile.ProfileSettings.LocalPath;
+    }
+    public HomePageViewModel(Connection connection)
+    {
+        instance = this;
+        _serverOperationService = ((App)Application.Current).Services.GetRequiredService<IServerOperationService>();
+        _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
+        _connectionsRepository = ((App)Application.Current).Services.GetRequiredService<IConnectionsRepository>();
+
+        var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
+        var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
+        LocalPath = currentProfile.ProfileSettings.LocalPath;
+
+        Host = connection.Host; Port = connection.Port.ToString(); Username = connection.Username; 
     }
     
     [RelayCommand]
@@ -452,6 +467,29 @@ public partial class HomePageViewModel : ViewModelBase
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't download the file.");
             await errorMessageBox.ShowAsync();
         }
-        
+    }
+    [RelayCommand]
+    private async Task SaveConnection()
+    {
+        try
+        {
+            var connection = new Connection()
+            {
+                Host = Host,
+                Username = Username,
+                Port = int.Parse(Port)
+            };
+
+            await _connectionsRepository.SaveConnection(connection);
+
+            var savedMessageBox = MessageBoxManager.GetMessageBoxStandard("Success.", "The connection string has been saved.");
+            await savedMessageBox.ShowAsync();
+        }
+        catch(Exception ex)
+        {
+            Debug.WriteLine($"SaveConnection error : {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't save the connection.");
+            await errorMessageBox.ShowAsync();
+        }
     }
 }

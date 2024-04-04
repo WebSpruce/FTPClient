@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using FTPClient.Database.Interfaces;
+using FTPClient.Database.Repository;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Service.Services;
@@ -56,6 +58,7 @@ public partial class App : Application
         var services = new ServiceCollection();
         services.AddSingleton<IServerOperationService, ServerOperationService>();
         services.AddSingleton<IFilesAndDirectoriesService, FilesAndDirectoriesService>();
+        services.AddScoped<IConnectionsRepository, ConnectionsRepository>();
         
         services.AddTransient<HomePageViewModel>();
         services.AddSingleton<MainWindowViewModel>();
