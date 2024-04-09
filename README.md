@@ -15,5 +15,5 @@ Thanks to the user interface, the user has the ability to upload and download fi
 
 ### 📝Todo
 - [x] History Page (with local database - sqlite)
-- [ ] Operations on server files like creating a new file, directory
+- [x] Operations on server files like (creating a new file, directory, rename)
 - [ ] Colors for settings profiles
