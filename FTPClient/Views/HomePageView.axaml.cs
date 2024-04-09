@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using FTPClient.Models;
 using FTPClient.Models.Models;
 using FTPClient.ViewModels;
 
@@ -8,9 +9,15 @@ namespace FTPClient.Views;
 public partial class HomePageView : UserControl
 {
     public static HomePageView instance;
+    public Border newDirectoryForm;
+    public Border newFileForm;
+    public Border renameForm;
     public HomePageView()
     {
         InitializeComponent();
+        newDirectoryForm = NewDirectoryForm;
+        newFileForm = NewFileForm;
+        renameForm = RenameForm;
         instance = this;
         DataContext = new HomePageViewModel();
     }
@@ -30,6 +37,55 @@ public partial class HomePageView : UserControl
                 var clipboard = new Window().Clipboard;
                 textBox.Text = await clipboard.GetTextAsync();
             }
+        }
+    }
+
+    private void Directory_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        var mouseButton = e.GetCurrentPoint(this).Properties.PointerUpdateKind;
+        var selectedDirectory = (sender as StackPanel).DataContext as Directory;
+        if (mouseButton == PointerUpdateKind.RightButtonPressed)
+        {
+            var contextMenu = new ContextMenu();
+            var createDirectory = new MenuItem { Header = "Create Directory" };
+            var createFile = new MenuItem { Header = "Create File" };
+            var Rename = new MenuItem { Header = "Rename" };
+            var Delete = new MenuItem { Header = "Delete" };
+
+            contextMenu.Items.Add(createDirectory);
+            contextMenu.Items.Add(createFile);
+            contextMenu.Items.Add(Rename);
+            contextMenu.Open((Control)sender);
+            createDirectory.Click += (sender, e) =>
+            {
+                HomePageViewModel.instance.OpenCreateDirectoryForm();
+            };
+            createFile.Click += (sender, e) =>
+            {
+                HomePageViewModel.instance.OpenCreateFileForm();
+            };
+            Rename.Click += (sender, e) =>
+            {
+                HomePageViewModel.instance.OpenRenameForm(selectedDirectory);
+            };
+        }
+    }
+
+    private void File_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        var mouseButton = e.GetCurrentPoint(this).Properties.PointerUpdateKind;
+        var selectedFile = (sender as StackPanel).DataContext as FileItem;
+        if (mouseButton == PointerUpdateKind.RightButtonPressed)
+        {
+            var contextMenu = new ContextMenu();
+            var Rename = new MenuItem { Header = "Rename" };
+
+            contextMenu.Items.Add(Rename);
+            contextMenu.Open((Control)sender);
+            Rename.Click += (sender, e) =>
+            {
+                HomePageViewModel.instance.OpenRenameForm(selectedFile);
+            };
         }
     }
 }

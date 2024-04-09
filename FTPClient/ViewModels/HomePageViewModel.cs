@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Shapes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,12 +15,15 @@ using FTPClient.Database.Interfaces;
 using FTPClient.Models;
 using FTPClient.Models.Models;
 using FTPClient.Service.Interfaces;
+using FTPClient.Views;
 using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using Renci.SshNet;
 using Renci.SshNet.Common;
+using Renci.SshNet.Sftp;
 using Directory = FTPClient.Models.Directory;
+using File = System.IO.File;
 using Path = System.IO.Path;
 
 namespace FTPClient.ViewModels;
@@ -77,7 +81,9 @@ public partial class HomePageViewModel : ViewModelBase
     [ObservableProperty]
     private string _localPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
+
     private SftpClient sftpClient;
+
     
     private Directory _selectedDirectory;
     public Directory SelectedDirectory
@@ -169,7 +175,16 @@ public partial class HomePageViewModel : ViewModelBase
         }
     }
 
+
     internal string currentProfileName = string.Empty;
+
+    [ObservableProperty]
+    private string _newDirectoryName = string.Empty;
+    [ObservableProperty]
+    private string _newFileName = string.Empty;
+    [ObservableProperty]
+    private string _newName = string.Empty;
+
 
     private readonly IServerOperationService _serverOperationService;
     private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
@@ -358,7 +373,7 @@ public partial class HomePageViewModel : ViewModelBase
         
     }
     [RelayCommand]
-    private async Task DeleteFileFromServer()
+    internal async Task DeleteFileOrDirectoryFromServer()
     {
         try
         {
@@ -366,20 +381,23 @@ public partial class HomePageViewModel : ViewModelBase
             var result = await connectedMessageBox.ShowAsync();
             if (result == ButtonResult.Yes)
             {
-
                 if (sftpClient.IsConnected)
                 {
-                    _serverOperationService.DeleteFile(sftpClient, ServerPath);
-                    var removeFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been removed.");
-                    await removeFileMessageBox.ShowAsync();
-
-                    ServerFiles.Clear();
-                    ServerPath = "/";
-                    if (sftpClient.IsConnected)
+                    SftpFileAttributes attrs = sftpClient.GetAttributes(ServerPath);
+                    if(attrs.IsDirectory)
                     {
-                        ServerFiles.Add(await GetAllDirectories(sftpClient, "/"));
-                        ServerProgressBarValue = 100;
+                        _serverOperationService.DeleteDirectory(sftpClient, ServerPath);
+                        var removeDirectoryMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Directory have just been removed.");
+                        await removeDirectoryMessageBox.ShowAsync();
                     }
+                    else
+                    {
+                        _serverOperationService.DeleteFile(sftpClient, ServerPath);
+                        var removeFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "File have just been removed.");
+                        await removeFileMessageBox.ShowAsync();
+                    }
+
+                    await ResetServerList();
                 }
             }
         }
@@ -409,13 +427,7 @@ public partial class HomePageViewModel : ViewModelBase
                 var uploadFileMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been uploaded to the server.");
                 await uploadFileMessageBox.ShowAsync();
 
-                ServerFiles.Clear();
-                if (sftpClient.IsConnected)
-                {
-                    ServerFiles.Add(await GetAllDirectories(sftpClient, "/"));
-                    ServerProgressBarValue = 100;
-                }
-                ServerPath = "/";
+                await ResetServerList();
             }
         }
         catch(Exception ex)
@@ -490,6 +502,151 @@ public partial class HomePageViewModel : ViewModelBase
             Debug.WriteLine($"SaveConnection error : {ex}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't save the connection.");
             await errorMessageBox.ShowAsync();
+        }
+    }
+    internal void OpenCreateDirectoryForm()
+    {
+        HomePageView.instance.NewDirectoryForm.IsVisible = true;
+    }
+    [RelayCommand]
+    private async Task CreateNewDirectory()
+    {
+        try
+        {
+            HomePageView.instance.NewDirectoryForm.IsVisible = false;
+            if (!string.IsNullOrEmpty(NewDirectoryName))
+            {
+                var path = $"{ServerPath}/{NewDirectoryName}";
+
+                try
+                {
+                    SftpFileAttributes attrs = sftpClient.GetAttributes(path);
+                }
+                catch (SftpPathNotFoundException ex)
+                {
+                    Debug.WriteLine($"the directory doesn't exist.");
+                    _serverOperationService.CreateDirectory(sftpClient, path);
+
+                    await ResetServerList();
+                }
+            }
+        }
+        catch(Exception ex)
+        {
+            Debug.WriteLine($"HomePageViewModel CreateNewDirectory error: {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't create a new directory.");
+            await errorMessageBox.ShowAsync();
+        }
+    }
+    [RelayCommand]
+    private async Task CancelNewDirectory()
+    {
+        HomePageView.instance.NewDirectoryForm.IsVisible = false;
+    }
+    internal void OpenCreateFileForm()
+    {
+        HomePageView.instance.NewFileForm.IsVisible = true;
+    }
+    [RelayCommand]
+    private async Task CreateNewFile()
+    {
+        try
+        {
+            HomePageView.instance.NewFileForm.IsVisible = false;
+            if (!string.IsNullOrEmpty(NewFileName) && NewFileName.Contains('.'))
+            {
+                var path = $"{ServerPath}/{NewFileName}";
+
+                try
+                {
+                    SftpFileAttributes attrs = sftpClient.GetAttributes(path);
+                }
+                catch (SftpPathNotFoundException ex)
+                {
+                    Debug.WriteLine($"the file doesn't exist.");
+                    _serverOperationService.CreateFile(sftpClient, path);
+
+                    await ResetServerList();
+                }
+            }
+            else
+            {
+                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Name of the file cannot be empty and It must contain '.' with format of the file.");
+                await errorMessageBox.ShowAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"HomePageViewModel CreateNewDirectory error: {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't create a new directory.");
+            await errorMessageBox.ShowAsync();
+        }
+    }
+    internal async Task OpenRenameForm(Directory selectedDirectory)
+    {
+        HomePageView.instance.renameForm.IsVisible = true;
+        NewName = selectedDirectory.Name;
+    }
+    internal async Task OpenRenameForm(FileItem selectedFile)
+    {
+        HomePageView.instance.renameForm.IsVisible = true;
+        NewName = selectedFile.Name;
+    }
+    [RelayCommand]
+    private void CancelForm()
+    {
+        HomePageView.instance.renameForm.IsVisible = false;
+        HomePageView.instance.newDirectoryForm.IsVisible = false;
+        HomePageView.instance.newFileForm.IsVisible = false;
+    }
+    [RelayCommand]
+    private async Task Rename()
+    {
+        try
+        {
+            SftpFileAttributes attrs = sftpClient.GetAttributes(ServerPath);
+            if (!string.IsNullOrEmpty(NewName))
+            {
+                if (!attrs.IsDirectory)
+                {
+                    if (NewName.Contains('.'))
+                    {
+                        await _serverOperationService.Rename(sftpClient, ServerPath, NewName);
+                        await ResetServerList();
+                    }
+                    else
+                    {
+                        var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "New name doesn't contain correct format.");
+                        await errorMessageBox.ShowAsync();
+                    }
+                }
+                else
+                {
+                    await _serverOperationService.Rename(sftpClient, ServerPath, NewName);
+                    await ResetServerList();
+                }
+            }
+            else
+            {
+                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "New name is empty.");
+                await errorMessageBox.ShowAsync();
+            }
+            HomePageView.instance.renameForm.IsVisible = false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"HomePageViewModel Rename error: {ex}");
+        }
+    }
+    private async Task ResetServerList()
+    {
+        ServerFiles.Clear();
+        ServerPath = "/";
+        ServerProgressBarValue = 50;
+        if (sftpClient.IsConnected)
+        {
+            ServerFiles.Add(await GetAllDirectories(sftpClient, "/"));
+            ServerProgressBarValue = 100;
         }
     }
 }
