@@ -1,11 +1,14 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FTPClient.Helper;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Service.Services;
+using FTPClient.Views;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Models;
 using System;
@@ -32,13 +35,28 @@ public partial class SettingsPageViewModel : ViewModelBase
     [ObservableProperty]
     private int _selectedIndex;
 
+    [ObservableProperty]
+    private Color _colorPickerColor = Color.FromRgb(36, 39, 42);
+
     private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
+    private string newPath = string.Empty;
+    public static SettingsPageViewModel instance;
     public SettingsPageViewModel()
     {
+        instance = this;
         _filesAndDirectoriesService = new FilesAndDirectoriesService();
         CurrentProfile = _filesAndDirectoriesService.GetCurrentProfile();
         LocalPath = _filesAndDirectoriesService.GetUserSettings(CurrentProfile).ProfileSettings.LocalPath;
 
+        var color = _filesAndDirectoriesService.GetUserSettings(CurrentProfile).ProfileSettings.ProfileColor;
+        if (color != null)
+        {
+            ColorPickerColor = Color.FromRgb(color.R, color.G, color.B);
+        }
+        else
+        {
+            ColorPickerColor = Color.FromRgb(36, 39, 42);
+        }
         SetProfilesCombobox();
     }
 
@@ -57,15 +75,7 @@ public partial class SettingsPageViewModel : ViewModelBase
 
             if (directory[0] != null)
             {
-                var newPath = directory[0].Path.AbsolutePath;
-
-                HomePageViewModel.instance.LocalPath = newPath;
-                LocalPath = newPath;
-
-                _filesAndDirectoriesService.SaveUserConfigFile(CurrentProfile, newPath);
-
-                var changedFolderMessageBox = MessageBoxManager.GetMessageBoxStandard("Saved", "Set a new folder as default path.");
-                await changedFolderMessageBox.ShowAsync();
+                LocalPath = directory[0].Path.AbsolutePath;
             }
         }
         catch (Exception ex)
@@ -92,7 +102,17 @@ public partial class SettingsPageViewModel : ViewModelBase
         _filesAndDirectoriesService.SaveCurrentProfile(profile.Name);
 
         CurrentProfile = profile.Name;
-        LocalPath = _filesAndDirectoriesService.GetUserSettings(CurrentProfile).ProfileSettings.LocalPath;
+        var settings = _filesAndDirectoriesService.GetUserSettings(CurrentProfile);
+        LocalPath = settings.ProfileSettings.LocalPath;
+        var color = settings.ProfileSettings.ProfileColor;
+        if(color != null)
+        {
+            ColorPickerColor = Color.FromRgb(color.R, color.G, color.B);
+        }
+        else
+        {
+            ColorPickerColor = Color.FromRgb(36, 39, 42);
+        }
 
         MainWindowViewModel.instance.CurrentProfileIcon = CurrentProfile.Substring(0, 1).ToUpper();
     }
@@ -132,5 +152,49 @@ public partial class SettingsPageViewModel : ViewModelBase
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Error while removing a new profile.");
             await errorMessageBox.ShowAsync();
         }
+    }
+    [RelayCommand]
+    private async Task SaveSettings()
+    {
+        try
+        {
+            HomePageViewModel.instance.LocalPath = newPath;
+
+            Profile profile = new Profile()
+            {
+                Name = CurrentProfile,
+                ProfileSettings = new ProfileSettings()
+                {
+                    LocalPath = LocalPath,
+                    ProfileColor = new JsonColor
+                    {
+                        R = ColorPickerColor.R, G = ColorPickerColor.G, B = ColorPickerColor.B
+                    },
+                }
+            };
+            _filesAndDirectoriesService.SaveUserConfigFile(profile);
+
+            var changedFolderMessageBox = MessageBoxManager.GetMessageBoxStandard("Saved", "Settings saved.");
+            await changedFolderMessageBox.ShowAsync();
+        }
+        catch(Exception ex)
+        {
+            Debug.WriteLine($"SettingsPageViewModel SaveSettings error: {ex}");
+            var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Error while saving settings.");
+            await errorMessageBox.ShowAsync();
+        }
+    }
+    internal void ColorPickerColorChanged(Color newColor)
+    {
+        ColorPickerColor = newColor;
+        if (DarkOrLightColor.IsLightColor(ColorPickerColor))
+        {
+            MainWindow.instance.ProfileIcon.Foreground = new SolidColorBrush(Color.FromRgb(36, 39, 42));
+        }
+        else
+        {
+            MainWindow.instance.ProfileIcon.Foreground = new SolidColorBrush(Color.FromRgb(107, 139, 161));
+        }
+        MainWindow.instance.ProfileIcon.Background = new SolidColorBrush(ColorPickerColor);
     }
 }

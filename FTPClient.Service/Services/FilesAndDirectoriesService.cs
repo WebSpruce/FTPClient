@@ -1,6 +1,6 @@
-﻿using FTPClient.Models;
+﻿using Avalonia.Media;
+using FTPClient.Models;
 using FTPClient.Service.Interfaces;
-using Renci.SshNet;
 using System.Diagnostics;
 using System.Text.Json;
 
@@ -10,22 +10,30 @@ namespace FTPClient.Service.Services
     {
         private static string settingsFilePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/userSettings.json";
         private static string profileFilePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/profile.json";
-        public void SaveUserConfigFile(string profileName, string localPath)
+        public void SaveUserConfigFile(Profile profile)
         {
             try
             {
                 var allProfiles = GetUserSettings();
                 var indexOfMyProfile = -1;
-                foreach (var profile in allProfiles)
+                foreach (var p in allProfiles)
                 {
-                    if(profile.Name == profileName)
+                    if(p.Name == profile.Name)
                     {
-                        indexOfMyProfile  = allProfiles.IndexOf(profile);
+                        indexOfMyProfile  = allProfiles.IndexOf(p);
                     }
                 }
                 if (indexOfMyProfile > -1)
                 {
-                    allProfiles[indexOfMyProfile].ProfileSettings.LocalPath = localPath;
+                    if (!string.IsNullOrEmpty(profile.ProfileSettings.LocalPath))
+                    {
+                        allProfiles[indexOfMyProfile].ProfileSettings.LocalPath = profile.ProfileSettings.LocalPath;
+                    }
+                    var color = profile.ProfileSettings.ProfileColor;
+                    if(color != null)
+                    {
+                        allProfiles[indexOfMyProfile].ProfileSettings.ProfileColor = profile.ProfileSettings.ProfileColor;
+                    }
                     string jsonFile = JsonSerializer.Serialize(allProfiles);
                     File.WriteAllText(settingsFilePath, jsonFile);
                 }
@@ -33,10 +41,11 @@ namespace FTPClient.Service.Services
                 {
                     Profile newProfile = new Profile()
                     {
-                        Name = profileName,
+                        Name = profile.Name,
                         ProfileSettings = new ProfileSettings
                         {
-                            LocalPath = localPath,
+                            LocalPath = profile.ProfileSettings.LocalPath,
+                            ProfileColor = profile.ProfileSettings.ProfileColor,
                         }
                     };
                     allProfiles.Add(newProfile);
@@ -78,7 +87,19 @@ namespace FTPClient.Service.Services
             {
                 if (!File.Exists(settingsFilePath))
                 {
-                    SaveUserConfigFile("Default", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+                    Profile newProfile = new Profile()
+                    {
+                        Name = "Default",
+                        ProfileSettings = new ProfileSettings
+                        {
+                            LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                            ProfileColor = new JsonColor
+                            {
+                                R = 36, G = 39, B = 42
+                            },
+                        }
+                    };
+                    SaveUserConfigFile(newProfile);
                 }
                 var userSettings = File.ReadAllText(settingsFilePath);
                 var settings = JsonSerializer.Deserialize<List<Profile>>(userSettings);

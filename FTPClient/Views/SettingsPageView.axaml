@@ -27,11 +27,6 @@
 							  Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
 					<Button Content="Save" Command="{Binding AddProfileCommand}" IsVisible="{Binding IsTextBoxVisible}"
 							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="70" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
-					<Button Command="{Binding DeleteProfileCommand}"
-							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="30" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
-						<PathIcon Data="{StaticResource DeleteRegular}"
-                                      Foreground="{StaticResource Accent}" Width="20" Height="20" Margin="3"></PathIcon>
-					</Button>
 					<ComboBox ItemsSource="{Binding Profiles}" SelectedIndex="{Binding SelectedIndex}" PointerPressed="ComboBox_PointerPressed" PointerExited="ComboBox_PointerExited"
 							  Background="{StaticResource Main}" CornerRadius="10" HorizontalAlignment="Center" HorizontalContentAlignment="Left" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
 						<ComboBox.ItemTemplate>
@@ -43,8 +38,18 @@
 							</DataTemplate>
 						</ComboBox.ItemTemplate>
 					</ComboBox>
+					<Button Command="{Binding DeleteProfileCommand}"
+							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="30" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
+						<PathIcon Data="{StaticResource DeleteRegular}"
+                                      Foreground="{StaticResource Accent}" Width="20" Height="20" Margin="3"></PathIcon>
+					</Button>
 					<Button Content="Change profile" Command="{Binding ChangeProfileCommand}"
 							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
+				</StackPanel>
+				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+					<Label Content="Profile color "
+						   HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>
+					<ColorPicker Color="{Binding ColorPickerColor}" ColorChanged="ColorPicker_ColorChanged"></ColorPicker>
 				</StackPanel>
 				<Separator VerticalAlignment="Center"></Separator>
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -55,6 +60,9 @@
 					<Button Content="📁" Command="{Binding OpenFolderCommand}"
 							Foreground="{StaticResource Accent}" Background="{StaticResource Main}"></Button>
 				</StackPanel>
+				<Separator VerticalAlignment="Center"></Separator>
+				<Button Content="Save Settings" Command="{Binding SaveSettingsCommand}"
+                            Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
 			</StackPanel>
 		</Border>
 	</StackPanel>

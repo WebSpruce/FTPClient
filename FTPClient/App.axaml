@@ -27,5 +27,6 @@
                 <ColorPaletteResources x:Key="Dark" Accent="{StaticResource Accent}" RegionColor="{StaticResource Accent2}" ErrorText="Red" />
             </FluentTheme.Palettes>
         </FluentTheme>
+		<StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
     </Application.Styles>
 </Application>

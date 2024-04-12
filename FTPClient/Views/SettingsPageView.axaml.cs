@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using FTPClient.ViewModels;
+using System.Diagnostics;
 
 namespace FTPClient.Views;
 
@@ -22,5 +23,10 @@ public partial class SettingsPageView : UserControl
     private void ComboBox_PointerExited(object? sender, Avalonia.Input.PointerEventArgs e)
     {
         MainWindow.instance.isWindowHover = false;
+    }
+
+    private void ColorPicker_ColorChanged(object? sender, Avalonia.Controls.ColorChangedEventArgs e)
+    {
+        SettingsPageViewModel.instance.ColorPickerColorChanged(e.NewColor);
     }
 }

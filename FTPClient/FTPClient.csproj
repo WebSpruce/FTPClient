@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.0.6" />
+        <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.0.6" />
         <PackageReference Include="Avalonia.Desktop" Version="11.0.6" />
         <PackageReference Condition="$(DefineConstants.Contains(ENABLE_XAML_HOT_RELOAD))" Include="Avalonia.Markup.Xaml.Loader" Version="11.0.6" />
         <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.6" />
@@ -23,6 +24,7 @@
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.6" />
         <PackageReference Include="Avalonia.ReactiveUI" Version="11.0.6" />
+        <PackageReference Include="AvaloniaColorPicker" Version="1.4.0" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.0" />
         <PackageReference Condition="$(DefineConstants.Contains(ENABLE_XAML_HOT_RELOAD))" Include="HotAvalonia" Version="1.0.1" />
         <PackageReference Include="HotAvalonia.Extensions" Version="1.0.1" PrivateAssets="All" />

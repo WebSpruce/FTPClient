@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using FTPClient.Database.Interfaces;
 using FTPClient.Database.Repository;
 using FTPClient.Models;
@@ -45,9 +47,23 @@ public partial class App : Application
         string LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
         List<Profile> allProfiles = _filesAndDirectoriesService.GetUserSettings();
-        if (string.IsNullOrEmpty(allProfiles[0].Name))
+        if (!allProfiles.Any())
         {
-            _filesAndDirectoriesService.SaveUserConfigFile("Default", LocalPath);
+            Profile profile = new Profile()
+            {
+                Name = "Default",
+                ProfileSettings = new ProfileSettings()
+                {
+                    LocalPath = LocalPath,
+                    ProfileColor = new JsonColor
+                    {
+                        R = 36,
+                        G = 39,
+                        B = 42
+                    },
+                }
+            };
+            _filesAndDirectoriesService.SaveUserConfigFile(profile);
             _filesAndDirectoriesService.SaveCurrentProfile();
         }
 

@@ -199,7 +199,14 @@ public partial class HomePageViewModel : ViewModelBase
 
         var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
-        LocalPath = currentProfile.ProfileSettings.LocalPath;
+        if(currentProfile.ProfileSettings != null)
+        {
+            LocalPath = currentProfile.ProfileSettings.LocalPath;
+        }
+        else
+        {
+            LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        }
     }
     public HomePageViewModel(Connection connection)
     {
@@ -210,7 +217,7 @@ public partial class HomePageViewModel : ViewModelBase
 
         var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
-        LocalPath = currentProfile.ProfileSettings.LocalPath;
+        LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
         Host = connection.Host; Port = connection.Port.ToString(); Username = connection.Username; 
     }

@@ -6,7 +6,9 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FTPClient.Helper;
 using FTPClient.Service.Interfaces;
+using FTPClient.Views;
 using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
@@ -26,7 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty] 
     private string? _currentProfileIcon;
-    
+
     public ObservableCollection<ListItemTemplate> MainMenuItems { get; } = new()
     {
         new ListItemTemplate(typeof(HomePageViewModel), "HomeRegular"),
@@ -41,9 +43,26 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         instance = this;
+
         var _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
         var currentProfile = _filesAndDirectoriesService.GetCurrentProfile();
-        CurrentProfileIcon = currentProfile.Substring(0,1).ToUpper();
+
+        Color profileColor = Color.FromRgb(36, 39, 42);
+        CurrentProfileIcon = "D";
+        if (!string.IsNullOrEmpty(currentProfile))
+        {
+            CurrentProfileIcon = currentProfile.Substring(0,1).ToUpper();
+            var userSettings = _filesAndDirectoriesService.GetUserSettings(currentProfile);
+            var userColorSettings = userSettings.ProfileSettings.ProfileColor;
+            if (userColorSettings != null)
+            {
+                profileColor = Color.FromRgb(userColorSettings.R, userColorSettings.G, userColorSettings.B);
+            }
+        }
+
+        Color foregroundColor = DarkOrLightColor.IsLightColor(profileColor) ? Color.FromRgb(36, 39, 42) : Color.FromRgb(107, 139, 161);
+        MainWindow.instance.ProfileIcon.Foreground = new SolidColorBrush(foregroundColor);
+        MainWindow.instance.ProfileIcon.Background = new SolidColorBrush(profileColor);
     }
     async partial void OnSelectedListItemChanged(ListItemTemplate? item)
     {

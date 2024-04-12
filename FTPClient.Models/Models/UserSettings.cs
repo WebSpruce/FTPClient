@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Avalonia.Media;
+using System.Text.Json.Serialization;
 
 namespace FTPClient.Models
 {
@@ -13,5 +14,24 @@ namespace FTPClient.Models
     {
         [JsonPropertyName("localPath")]
         public string LocalPath { get; set; }
+        [JsonPropertyName("profileColor")]
+        public JsonColor ProfileColor { get; set; }
     }
+    public class JsonColor
+    {
+        [JsonPropertyName("A")]
+        public byte A { get; set; }
+        [JsonPropertyName("R")]
+        public byte R { get; set; }
+        [JsonPropertyName("G")]
+        public byte G { get; set; }
+        [JsonPropertyName("B")]
+        public byte B { get; set; }
+
+        public Color ToColor()
+        {
+            return Color.FromArgb(A, R, G, B);
+        }
+    }
+
 }
