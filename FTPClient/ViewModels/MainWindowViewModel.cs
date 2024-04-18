@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
@@ -40,6 +41,7 @@ public partial class MainWindowViewModel : ViewModelBase
         new ListItemTemplate(typeof(ExitPageViewModel), "ExitRegular"),
     };
     public static MainWindowViewModel instance;
+    internal Dictionary<Type, ViewModelBase> pagesDictionary = new Dictionary<Type, ViewModelBase>();
     public MainWindowViewModel()
     {
         instance = this;
@@ -79,37 +81,31 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         }
 
-        if (CurrentPage is HomePageViewModel)
-        {
-            var connectedMessageBox = MessageBoxManager.GetMessageBoxStandard("Warning", "Are you sure to close this window?\nIt won't save your current connection.",ButtonEnum.YesNo);
-            var result = await connectedMessageBox.ShowAsync();
-            if (result == ButtonResult.Yes)
-            {
-                var instance = Activator.CreateInstance(item.ModelType);
-                if (instance is null)
-                {
-                    return;
-                }
 
-                CurrentPage = (ViewModelBase)instance;
-            }
-            else
-            {
-                return;
-            }
+        if (!pagesDictionary.ContainsKey(CurrentPage.GetType()))
+        {
+            var page = (ViewModelBase)CurrentPage;
+            pagesDictionary.Add(CurrentPage.GetType(), page);
+        }
+
+        var modelType = item.ModelType;
+        if (pagesDictionary.ContainsKey(modelType))
+        {
+            CurrentPage = pagesDictionary[modelType];
         }
         else
         {
-            var instance = Activator.CreateInstance(item.ModelType);
+            var instance = Activator.CreateInstance(modelType);
             if (instance is null)
             {
                 return;
             }
 
             CurrentPage = (ViewModelBase)instance;
+            pagesDictionary.Add(modelType, CurrentPage);
         }
 
-       
+
     }
     
     [RelayCommand]

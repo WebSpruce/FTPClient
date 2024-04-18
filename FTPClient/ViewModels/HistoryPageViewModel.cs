@@ -44,6 +44,7 @@ public partial class HistoryPageViewModel : ViewModelBase
     {
         try
         {
+            MainWindowViewModel.instance.SelectedListItem = new ListItemTemplate(typeof(HomePageViewModel), "HomeRegular");
             MainWindowViewModel.instance.CurrentPage = new HomePageViewModel(connection);
         }
         catch (Exception ex)

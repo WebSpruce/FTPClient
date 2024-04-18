@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Controls.Shapes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -323,7 +322,8 @@ public partial class HomePageViewModel : ViewModelBase
                 if (file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
                 {
                     directory.FileItems.Add(await GetAllDirectories(sftpClient, file.FullName));
-                }else if (!file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
+                }
+                else if (!file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
                 {
                     directory.FileItems.Add(new FileItem { Name = Path.GetFileName(file.FullName), Path = file.FullName, Size = file.Attributes.Size.ToString("N0") });
                 }

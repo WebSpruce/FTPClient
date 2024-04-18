@@ -76,9 +76,9 @@ public partial class App : Application
         services.AddSingleton<IFilesAndDirectoriesService, FilesAndDirectoriesService>();
         services.AddScoped<IConnectionsRepository, ConnectionsRepository>();
         
-        services.AddTransient<HomePageViewModel>();
+        services.AddSingleton<HomePageViewModel>();
         services.AddSingleton<MainWindowViewModel>();
-        services.AddSingleton<SettingsPageViewModel>();
+        services.AddTransient<SettingsPageViewModel>();
         services.AddTransient<HistoryPageViewModel>();
         
         services.AddSingleton<HomePageView>();
