@@ -8,11 +8,10 @@ using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FTPClient.Helper;
+using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Views;
 using Microsoft.Extensions.DependencyInjection;
-using MsBox.Avalonia;
-using MsBox.Avalonia.Enums;
 
 namespace FTPClient.ViewModels;
 
@@ -50,11 +49,17 @@ public partial class MainWindowViewModel : ViewModelBase
         var currentProfile = _filesAndDirectoriesService.GetCurrentProfile();
 
         Color profileColor = Color.FromRgb(36, 39, 42);
+        JsonColor profileJsonColor = new JsonColor() { R =  profileColor.R, G = profileColor.G, B = profileColor.B };
         CurrentProfileIcon = "D";
         if (!string.IsNullOrEmpty(currentProfile))
         {
             CurrentProfileIcon = currentProfile.Substring(0,1).ToUpper();
             var userSettings = _filesAndDirectoriesService.GetUserSettings(currentProfile);
+
+            if(userSettings.ProfileSettings == null)
+            {
+                userSettings.ProfileSettings = new ProfileSettings() { ProfileColor = profileJsonColor, LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) };
+            }
             var userColorSettings = userSettings.ProfileSettings.ProfileColor;
             if (userColorSettings != null)
             {

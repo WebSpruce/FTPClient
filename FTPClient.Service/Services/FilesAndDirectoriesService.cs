@@ -35,7 +35,10 @@ namespace FTPClient.Service.Services
                         allProfiles[indexOfMyProfile].ProfileSettings.ProfileColor = profile.ProfileSettings.ProfileColor;
                     }
                     string jsonFile = JsonSerializer.Serialize(allProfiles);
-                    File.WriteAllText(settingsFilePath, jsonFile);
+                    using (StreamWriter writer = new StreamWriter(settingsFilePath))
+                    {
+                        writer.Write(jsonFile);
+                    }
                 }
                 else
                 {
@@ -51,7 +54,10 @@ namespace FTPClient.Service.Services
                     allProfiles.Add(newProfile);
 
                     string jsonFile = JsonSerializer.Serialize(allProfiles);
-                    File.WriteAllText(settingsFilePath, jsonFile);
+                    using (StreamWriter writer = new StreamWriter(settingsFilePath))
+                    {
+                        writer.Write(jsonFile);
+                    }
                 }
             }
             catch(Exception ex)
@@ -64,16 +70,31 @@ namespace FTPClient.Service.Services
         {
             try
             {
-                var userSettings = File.ReadAllText(settingsFilePath);
-                var settings = JsonSerializer.Deserialize<List<Profile>>(userSettings);
-                foreach( Profile profile in settings )
+                if (!File.Exists(settingsFilePath))
                 {
-                    if(profile.Name == profileName)
-                    {
-                        return profile ?? new Profile();
-                    }
+                    using FileStream fs = File.Create(settingsFilePath);
                 }
-                return new Profile();
+                string userSettings = string.Empty;
+                using (StreamReader reader = new StreamReader(settingsFilePath))
+                {
+                    userSettings = reader.ReadToEnd();
+                }
+                if (string.IsNullOrWhiteSpace(userSettings))
+                {
+                    return new Profile();
+                }
+                else
+                {
+                    var settings = JsonSerializer.Deserialize<List<Profile>>(userSettings);
+                    foreach (Profile profile in settings)
+                    {
+                        if (profile.Name == profileName)
+                        {
+                            return profile ?? new Profile();
+                        }
+                    }
+                    return new Profile();
+                }
             }
             catch (Exception ex)
             {
