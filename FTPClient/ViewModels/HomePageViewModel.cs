@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -174,7 +175,6 @@ public partial class HomePageViewModel : ViewModelBase
         }
     }
 
-
     internal string currentProfileName = string.Empty;
 
     [ObservableProperty]
@@ -227,42 +227,25 @@ public partial class HomePageViewModel : ViewModelBase
         try
         {
             ServerProgressBarValue = 0;
-            if (string.IsNullOrEmpty(Host))
+            
+            if (string.IsNullOrEmpty(Host) || string.IsNullOrEmpty(Username) ||
+                string.IsNullOrEmpty(Password) || !int.TryParse(Port, out var portNumber))
             {
-                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Host input is null or empty.");
-                await errorMessageBox.ShowAsync();
+                await MessageBoxManager.GetMessageBoxStandard("Error", "All connection fields must be filled out correctly.").ShowAsync();
+                ServerProgressBarValue = 100;
+                return;
             }
-            else if (string.IsNullOrEmpty(Username))
+            
+            sftpClient = await _serverOperationService.ConnectToServer(Host,  Username, Password, int.Parse(Port));
+            if (sftpClient.IsConnected)
             {
-                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Username input is null or empty.");
-                await errorMessageBox.ShowAsync();
+                // ServerFiles.Clear();
+                var rootDir = await LoadSingleLevel(sftpClient, "/", "Root");
+                ServerFiles.Add(rootDir);
             }
-            else if (string.IsNullOrEmpty(Password))
-            {
-                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Password input is null or empty.");
-                await errorMessageBox.ShowAsync();
-            }
-            else if (string.IsNullOrEmpty(Port))
-            {
-                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Port input is null or empty.");
-                await errorMessageBox.ShowAsync();
-            }
-            else if (!string.IsNullOrEmpty(Host) && !string.IsNullOrEmpty(Username) &&
-                     !string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(Port))
-            {
-                sftpClient = await _serverOperationService.ConnectToServer(sftpClient, Host,  Username, Password, Port);
-                if (sftpClient.IsConnected)
-                {
-                    await Task.Run(() => ServerFiles.Add(GetAllDirectories(sftpClient, "/").Result));
-                }
-                
-                var connectedMessageBox = MessageBoxManager.GetMessageBoxStandard("Success!", "Connected to the server.");
-                await connectedMessageBox.ShowAsync();
-                
-                SetBtnsVisibility();
-                IsConnected = true;
-            }
-
+            
+            SetBtnsVisibility();
+            IsConnected = true;
         }
         catch (SocketException se)
         {
@@ -280,6 +263,43 @@ public partial class HomePageViewModel : ViewModelBase
         {
             ServerProgressBarValue = 100;
         }
+    }
+    [RelayCommand]
+    public async Task LoadDirectoryChildrenOnDemand(Directory directory)
+    {
+        if (directory.IsLoading || directory.ChildrenLoaded)
+            return;
+
+        directory.IsLoading = true;
+        
+        if (directory.FileItems.Count == 1 && directory.FileItems[0] is FileItem dummy && dummy.Path == null)
+            directory.FileItems.Clear();
+    
+        try
+        {
+            var items = await LoadSingleLevel(this.sftpClient, directory.Path, directory.Name);
+            // items.FileItems now contains all children with their own placeholders
+            foreach (var child in items.FileItems)
+                directory.FileItems.Add(child);
+        
+            directory.ChildrenLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error loading children for directory {directory.Path}: {ex}");
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Failed to load contents of {directory.Name}").ShowAsync();
+        }
+        finally
+        {
+            directory.IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ItemExpanded(Directory? dir)
+    {
+        if (dir is null) return;
+        await LoadDirectoryChildrenOnDemand(dir);
     }
     [RelayCommand]
     private void DisconnectFromServer()
@@ -315,19 +335,30 @@ public partial class HomePageViewModel : ViewModelBase
         var directory = new Directory { Name = Path.GetFileName(path), Path = path };
         try
         {
+            // files in current dir
             var listOfFiles = await _serverOperationService.GetAllDirectories(sftpClient, path);
-            ServerProgressBarValue = 50;
-            foreach (var file in listOfFiles)
+            var subDirToProcess = listOfFiles.Where(item => item.IsDirectory && item.Name != "." && item.Name != "..")
+                .ToList();
+            var filesInDir = listOfFiles.Where(item => !item.IsDirectory).ToList();
+
+            foreach (var file in filesInDir)
             {
-                if (file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
+                directory.FileItems.Add(new FileItem
                 {
-                    directory.FileItems.Add(await GetAllDirectories(sftpClient, file.FullName));
-                }
-                else if (!file.IsDirectory && !file.Name.StartsWith(".") && !file.Name.StartsWith(".."))
-                {
-                    directory.FileItems.Add(new FileItem { Name = Path.GetFileName(file.FullName), Path = file.FullName, Size = file.Attributes.Size.ToString("N0") });
-                }
+                    Name = Path.GetFileName(file.FullName),
+                    Path = file.FullName, // fullname is path
+                    Size = file.Attributes.Size.ToString("N0")
+                });
             }
+
+            var subDirTasks = subDirToProcess.Select(subDir => GetAllDirectories(sftpClient, subDir.FullName));
+
+            var completedSubDir = await Task.WhenAll(subDirTasks);
+                
+            ServerProgressBarValue = 50;
+            foreach (var subDir in completedSubDir)
+                directory.FileItems.Add(subDir);
+            
         }
         catch (SftpPermissionDeniedException ex)
         {
@@ -336,6 +367,68 @@ public partial class HomePageViewModel : ViewModelBase
         catch (Exception ex)
         {
             Debug.WriteLine($"GetAllDirectories error: {ex}");
+        }
+
+        return directory;
+    }
+
+    private async Task<Directory> LoadSingleLevel(SftpClient sftpClient, string path, string displayName = null)
+    {
+        var directory = new Directory()
+        {
+            Name = displayName ?? Path.GetFileName(path) ?? path,
+            Path = path,
+            Size = "",
+            ChildrenLoaded = false,
+            HasChildren = true,
+            IsLoading = false
+        };
+
+        try
+        {
+            var items = await _serverOperationService.GetAllDirectories(this.sftpClient, path);
+            
+            var subDirToProcess = items
+                .Where(item => item.IsDirectory && item.Name != "." && item.Name != "..")
+                .ToList();
+            var filesInDir = items.Where(item => !item.IsDirectory).ToList();
+
+            foreach (var file in filesInDir)
+            {
+                directory.FileItems.Add(new FileItem 
+                { 
+                    Name = Path.GetFileName(file.FullName), 
+                    Path = file.FullName,
+                    Size = file.Attributes.Size.ToString("N0") 
+                });
+            }
+            // show only placeholders, loading on demand
+            foreach (var sub in subDirToProcess)
+            {
+                var placeholder = new Directory
+                {
+                    Name = sub.Name,
+                    Path = sub.FullName,
+                    Size = "",
+                    HasChildren = true,
+                    ChildrenLoaded = false
+                };
+                // Seed with one child
+                placeholder.FileItems.Add(new FileItem { Name = "⏳", Path = null, Size = "" });
+                directory.FileItems.Add(placeholder);
+            }
+            directory.ChildrenLoaded = true;
+            directory.HasChildren = subDirToProcess.Any() || filesInDir.Any();
+        }
+        catch (SftpPermissionDeniedException ex)
+        {
+            Debug.WriteLine($"Permission denied for directory: {path}. {ex.Message}");
+            directory.HasChildren = false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error loading directory {path}: {ex}");
+            directory.HasChildren = false;
         }
 
         return directory;

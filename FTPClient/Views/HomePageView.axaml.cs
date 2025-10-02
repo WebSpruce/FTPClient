@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using FTPClient.Models;
@@ -40,10 +41,16 @@ public partial class HomePageView : UserControl
         }
     }
 
-    private void Directory_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    private async void Directory_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         var mouseButton = e.GetCurrentPoint(this).Properties.PointerUpdateKind;
-        var selectedDirectory = (sender as StackPanel).DataContext as Directory;
+        var selectedDirectory = (sender as StackPanel)?.DataContext as Directory;
+    
+        if (selectedDirectory == null) return;
+        
+        var viewModel = this.DataContext as HomePageViewModel;
+        if (viewModel == null) return;
+        Debug.WriteLine($"mouse clicked: {mouseButton}");
         if (mouseButton == PointerUpdateKind.RightButtonPressed)
         {
             var contextMenu = new ContextMenu();
@@ -56,6 +63,7 @@ public partial class HomePageView : UserControl
             contextMenu.Items.Add(createFile);
             contextMenu.Items.Add(Rename);
             contextMenu.Open((Control)sender);
+        
             createDirectory.Click += (sender, e) =>
             {
                 HomePageViewModel.instance.OpenCreateDirectoryForm();
@@ -68,6 +76,12 @@ public partial class HomePageView : UserControl
             {
                 HomePageViewModel.instance.OpenRenameForm(selectedDirectory);
             };
+        }
+        else if (mouseButton == PointerUpdateKind.LeftButtonPressed)
+        {
+            Debug.WriteLine($"mouse: left clicked");
+            viewModel.SelectedServerItem = selectedDirectory;
+            await viewModel.LoadDirectoryChildrenOnDemand(selectedDirectory);
         }
     }
 

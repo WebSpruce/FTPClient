@@ -7,13 +7,16 @@ namespace FTPClient.Service.Services;
 
 public class ServerOperationService : IServerOperationService
 {
-    public async Task<SftpClient> ConnectToServer(SftpClient sftpClient, string Host, string Username, string Password, string Port)
+    public async Task<SftpClient> ConnectToServer(string host, string username, string password, int port)
     {
         try
         {
-            sftpClient = new SftpClient(new PasswordConnectionInfo(Host, int.Parse(Port), Username, Password));
-            var cancellationToken = new CancellationTokenSource();
-            await sftpClient.ConnectAsync(cancellationToken.Token);
+            var connectionInfo = new PasswordConnectionInfo(host, port, username, password)
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            };
+            var sftpClient = new SftpClient(connectionInfo);
+            await Task.Run(() => sftpClient.Connect());
             return sftpClient;
         }
         catch (Exception ex)
@@ -37,12 +40,11 @@ public class ServerOperationService : IServerOperationService
         }
     }
 
-    public async Task<IEnumerable<ISftpFile>>? GetAllDirectories(SftpClient sftpClient, string path)
+    public async Task<IEnumerable<ISftpFile>> GetAllDirectories(SftpClient sftpClient, string path, CancellationToken cancellationToken = default)
     {
         try
         {
-            var cancellationToken = new CancellationTokenSource();
-            return await sftpClient.ListDirectoryAsync(path, cancellationToken.Token).ToListAsync(cancellationToken.Token); 
+            return await sftpClient.ListDirectoryAsync(path, cancellationToken).ToListAsync(cancellationToken);
         }
         catch (Exception ex)
         {

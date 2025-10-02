@@ -1,12 +1,24 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
 namespace FTPClient.Models;
 
-public class Directory : FileItem
+public class Directory : FileItem, INotifyPropertyChanged
 {
-    public List<FileItem> FileItems { get; set; }
-
+    public ObservableCollection<FileItem> FileItems { get; set; }
+    public bool HasChildren { get; set; } = true;
+    public bool ChildrenLoaded { get; set; } = false;
+    public bool IsLoading { get; set; } = false;
     public Directory()
     {
         FileItems = new();
+    }
+    public event PropertyChangedEventHandler PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string name = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
 

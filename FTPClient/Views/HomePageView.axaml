@@ -97,10 +97,17 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="550" Padding="0" Margin="0">
                     <TreeView ItemsSource="{Binding ServerFiles}" SelectedItem="{Binding SelectedServerItem}" AutoScrollToSelectedItem="True"
                               Background="{StaticResource Second}" Margin="5" Padding="0" >
-                        <TreeView.DataTemplates>
+	                    <TreeView.Styles>
+		                    <Style Selector="TreeViewItem:selected">
+			                    <Setter Property="IsExpanded" Value="True"/>
+		                    </Style>
+	                    </TreeView.Styles>
+	                    <TreeView.DataTemplates>
                             <TreeDataTemplate DataType="models:Directory" ItemsSource="{Binding FileItems}">
 								<StackPanel Orientation="Horizontal" PointerPressed="Directory_PointerPressed">
-								    <TextBlock Text="{Binding Name}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="White"/>
+									<TextBlock Text="{Binding Name}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="White"/>
+								    <TextBlock Text=" (Loading...)" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" 
+								               Foreground="Gray" IsVisible="{Binding IsLoading}" Margin="5,0,0,0"/>
 								</StackPanel>    
                             </TreeDataTemplate>
                             <DataTemplate DataType="models:FileItem">

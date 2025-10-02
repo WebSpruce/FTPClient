@@ -5,9 +5,9 @@ namespace FTPClient.Service.Interfaces;
 
 public interface IServerOperationService
 {
-    Task<SftpClient> ConnectToServer(SftpClient sftpClient, string Host, string Username, string Password, string Port);
+    Task<SftpClient> ConnectToServer(string Host, string Username, string Password, int Port);
     SftpClient DisconnectFromServer(SftpClient sftpClient);
-    Task<IEnumerable<ISftpFile>>? GetAllDirectories(SftpClient sftpClient, string path);
+    Task<IEnumerable<ISftpFile>>? GetAllDirectories(SftpClient sftpClient, string path, CancellationToken cancellationToken = default);
     void UploadFile(SftpClient sftpClient, FileStream fileStream, string fileName);
     void DownloadFile(SftpClient sftpClient, string serverFilePath, FileStream fileStream);
     void CreateDirectory(SftpClient sftpClient, string serverDirectoryPath);
