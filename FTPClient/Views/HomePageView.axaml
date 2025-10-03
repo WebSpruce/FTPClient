@@ -14,8 +14,9 @@
     </UserControl.KeyBindings>
     
     <Grid ColumnDefinitions="*,35,*" RowDefinitions="60,*">
-        <Border CornerRadius="10" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                Background="{StaticResource Second}" Margin="5">
+	    <!-- Header -->
+	    <Border CornerRadius="10" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+	            Background="{StaticResource Second}" Margin="5">
             <ScrollViewer HorizontalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Horizontal" Spacing="5" Margin="10">
                     <TextBox Text="{Binding Host}" Watermark="☁Host:" KeyDown="PasteKeyDownCommand"
@@ -35,6 +36,7 @@
                 </StackPanel>
             </ScrollViewer>
         </Border>
+	    <!-- Local -->
         <Border CornerRadius="10" Grid.Row="1" Grid.Column="0" IsEnabled="{Binding IsConnected}"
                 Background="{StaticResource Second}" Margin="10,10,5,10">
 			<StackPanel>
@@ -65,6 +67,7 @@
 				</ScrollViewer>
 			</StackPanel>
         </Border>
+	    <!-- Middle -->
 		<Border CornerRadius="5" Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsConnected}"
 				Background="{StaticResource Second}" Padding="5,10" HorizontalAlignment="Center" VerticalAlignment="Center">
 			<StackPanel Orientation="Vertical" Spacing="5" VerticalAlignment="Center">
@@ -85,6 +88,7 @@
 				</Button>
 			</StackPanel>
 		</Border>
+	    <!-- Server -->
         <Border ZIndex="1" CornerRadius="10" Grid.Row="1" Grid.Column="2" 
                 Background="{StaticResource Second}" Margin="5,10,10,10">
             <StackPanel>
@@ -123,6 +127,7 @@
                 </ScrollViewer>
             </StackPanel>
         </Border>
+	    <!-- Right click controls -->
 		<Border x:Name="NewDirectoryForm" CornerRadius="10" Grid.Row="1" Grid.Column="2" ZIndex="2" IsVisible="False"
 				Background="{StaticResource Second}" BorderBrush="{StaticResource Main}" BorderThickness="3" Width="200" Height="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3">
 			<StackPanel Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">

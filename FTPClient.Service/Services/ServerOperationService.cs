@@ -52,45 +52,50 @@ public class ServerOperationService : IServerOperationService
             return new List<ISftpFile>();
         }
     }
-    public void UploadFile(SftpClient sftpClient, FileStream fileStream, string fileName)
+    public async Task UploadFile(SftpClient sftpClient, FileStream fileStream, string fileName)
     {
         sftpClient.BufferSize = 4 * 1024;
-        sftpClient.UploadFile(fileStream, fileName);
+        await Task.Run(() => sftpClient.UploadFile(fileStream, fileName));
     }
-    public void DeleteFile(SftpClient sftpClient, string serverFilePath)
+    public async Task DeleteFile(SftpClient sftpClient, string serverFilePath)
     {
-        sftpClient.DeleteFile(serverFilePath);
+        await Task.Run(() => sftpClient.DeleteFile(serverFilePath));
     } 
-    public void DeleteDirectory(SftpClient sftpClient, string serverDirectoryPath)
+    public async Task DeleteDirectory(SftpClient sftpClient, string serverDirectoryPath)
     {
-        sftpClient.DeleteDirectory(serverDirectoryPath);
+        await Task.Run(() => sftpClient.DeleteDirectory(serverDirectoryPath));
     } 
-    public void CreateDirectory(SftpClient sftpClient, string serverDirectoryPath)
+    public async Task CreateDirectory(SftpClient sftpClient, string serverDirectoryPath)
     {
-        sftpClient.CreateDirectory(serverDirectoryPath);
+        await Task.Run(() =>sftpClient.CreateDirectory(serverDirectoryPath));
     } 
-    public void CreateFile(SftpClient sftpClient, string serverFilePath)
+    public async Task CreateFile(SftpClient sftpClient, string serverFilePath)
     {
-        sftpClient.Create(serverFilePath);
+        await Task.Run(() => sftpClient.Create(serverFilePath));
     } 
-    public void DownloadFile(SftpClient sftpClient, string serverFilePath, FileStream fileStream)
+    public async Task DownloadFile(SftpClient sftpClient, string serverFilePath, FileStream fileStream)
     {
-        sftpClient.DownloadFile(serverFilePath, fileStream);
+        await Task.Run(() => sftpClient.DownloadFile(serverFilePath, fileStream));
     }
     public async Task Rename(SftpClient sftpClient, string serverPath, string newName)
     {
         try
         {
-            var cancellationToken = new CancellationTokenSource();
-            var lastSlashIndex = serverPath.LastIndexOf("/");
-            var dur = serverPath.Length - lastSlashIndex;
-            var pathWithoutFile = serverPath.Remove(lastSlashIndex, dur);
-            var newFilePath = $"{pathWithoutFile}/{newName}";
-            await sftpClient.RenameFileAsync(serverPath, newFilePath, cancellationToken.Token);
+            var directoryPath = Path.GetDirectoryName(serverPath)?.Replace('\\', '/');
+            if (string.IsNullOrEmpty(directoryPath))
+            {
+                directoryPath = "/";
+            }
+
+            var newFilePath = $"{directoryPath}/{newName}";
+
+            var token = new CancellationToken();
+            await sftpClient.RenameFileAsync(serverPath, newFilePath, token);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"FilesAndDirectoriesService Rename error: {ex}");
+            throw;
         }
     }
 }
