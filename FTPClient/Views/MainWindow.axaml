@@ -28,18 +28,19 @@
                     <Grid>
                         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top">
                             <Button Command="{Binding SplitViewTriggerCommand}" Background="{StaticResource Main}">
-                            <PathIcon Data="{StaticResource LineHorizontal3Regular}"
-                                      Foreground="{StaticResource Accent}" Width="25" Height="25" Margin="3"></PathIcon>
+                            <PathIcon Data="{StaticResource LineHorizontal3Regular}" HorizontalAlignment="Left"
+                                      Foreground="{StaticResource Accent}" Width="25" Height="25" Margin="3"/>
                             </Button>
                             <ListBox ItemsSource="{Binding MainMenuItems}" SelectedItem="{Binding SelectedListItem}"
                                 Background="{StaticResource Main}">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:ListItemTemplate}">
-                                        <StackPanel Spacing="15" Orientation="Horizontal">
+                                        <StackPanel Spacing="15" Orientation="Horizontal" Margin="0,5">
                                             <PathIcon Data="{Binding ListItemIcon}"
-                                                      Foreground="{StaticResource Accent}" Width="25" Height="25" Margin="7,3,3,3"></PathIcon>
+                                                      Foreground="{StaticResource Accent}" Width="17" Height="17" Margin="10,3,3,3"/>
                                             <TextBlock Text="{Binding Label}" 
-                                                       Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" HorizontalAlignment="Center" VerticalAlignment="Center" Width="80"></TextBlock>
+                                                       Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" 
+                                                       FontWeight="Regular" HorizontalAlignment="Center" VerticalAlignment="Center" Width="90"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -47,16 +48,19 @@
                         </StackPanel>
                         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom">
 							<Label x:Name="ProfileIcon" Content="{Binding CurrentProfileIcon}"
-								   CornerRadius="10" Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontSize="17" FontWeight="Regular" HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center" Width="40" Margin="4,0,0,0" Padding="10,5"></Label>
+								   CornerRadius="20" Foreground="{StaticResource Accent}" 
+                                   FontFamily="{StaticResource MadeInfinity}" FontSize="17" FontWeight="Regular" 
+                                   HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center" Width="30" Margin="8,0,0,5" Padding="5,3"/>
                             <ListBox ItemsSource="{Binding FooterMenuItems}" SelectedItem="{Binding SelectedListItem}"
                                      Background="{StaticResource Main}" VerticalAlignment="Bottom">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:ListItemTemplate}">
-                                        <StackPanel Spacing="15" Orientation="Horizontal">
+                                        <StackPanel Spacing="15" Orientation="Horizontal" Margin="0,5">
                                             <PathIcon Data="{Binding ListItemIcon}"
-                                                      Foreground="{StaticResource Accent}" Width="25" Height="25" Margin="7,3,3,3"></PathIcon>
+                                                      Foreground="{StaticResource Accent}" Width="17" Height="17" Margin="10,3,3,3"/>
                                             <TextBlock Text="{Binding Label}" 
-                                                       Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" HorizontalAlignment="Center" VerticalAlignment="Center" Width="80"></TextBlock>
+                                                       Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" 
+                                                       FontWeight="Regular" HorizontalAlignment="Center" VerticalAlignment="Center" Width="90"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>

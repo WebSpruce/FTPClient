@@ -13,9 +13,9 @@
         <KeyBinding Gesture="Enter" Command="{Binding ConnectToServerCommand}"></KeyBinding>
     </UserControl.KeyBindings>
     
-    <Grid ColumnDefinitions="*,35,*" RowDefinitions="60,*">
+    <Grid ColumnDefinitions="*,*" RowDefinitions="60,35,*">
 	    <!-- Header -->
-	    <Border CornerRadius="10" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+	    <Border CornerRadius="10" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
 	            Background="{StaticResource Second}" Margin="5">
             <ScrollViewer HorizontalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Horizontal" Spacing="5" Margin="10">
@@ -37,8 +37,8 @@
             </ScrollViewer>
         </Border>
 	    <!-- Local -->
-        <Border CornerRadius="10" Grid.Row="1" Grid.Column="0" IsEnabled="{Binding IsConnected}"
-                Background="{StaticResource Second}" Margin="10,10,5,10">
+        <Border CornerRadius="10" Grid.Row="2" Grid.Column="0" IsEnabled="{Binding IsConnected}"
+                Background="{StaticResource Second}" Margin="10,10,5,0">
 			<StackPanel>
 				<Label Content="Local machine"
 					   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>
@@ -46,13 +46,15 @@
                              Height="3" Foreground="{StaticResource Accent2}"></ProgressBar>
 				<StackPanel Orientation="Horizontal">
 				    <TextBox Text="{Binding LocalPath}" Watermark="⚫Path:" IsReadOnly="False"
-                         Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
+                         Foreground="{StaticResource Accent}" Background="{StaticResource Main}" 
+                         BorderBrush="Transparent" CornerRadius="5" Height="25" MaxWidth="323"
+                         FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
 					<Button Content="📁" Command="{Binding OpenFolderCommand}"
 							Foreground="{StaticResource Accent}" Background="{StaticResource Main}"></Button>
 			    </StackPanel>
 				<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="560" Padding="0" Margin="0">
 					<TreeView ItemsSource="{Binding LocalFiles}" SelectedItem="{Binding SelectedLocalItem}" AutoScrollToSelectedItem="True"
-                              Background="{StaticResource Second}" Margin="5" Padding="0" >
+                              Background="{StaticResource Second}" Margin="0" Padding="0" >
 						<TreeView.DataTemplates>
 							<TreeDataTemplate DataType="models:Directory" ItemsSource="{Binding FileItems}">
 								<TextBlock Text="{Binding Name}"/>
@@ -68,29 +70,50 @@
 			</StackPanel>
         </Border>
 	    <!-- Middle -->
-		<Border CornerRadius="5" Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsConnected}"
-				Background="{StaticResource Second}" Padding="5,10" HorizontalAlignment="Center" VerticalAlignment="Center">
-			<StackPanel Orientation="Vertical" Spacing="5" VerticalAlignment="Center">
+		<Border CornerRadius="10" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" IsEnabled="{Binding IsConnected}"
+				Background="{StaticResource Second}" Padding="20,10" HorizontalAlignment="Center" VerticalAlignment="Center">
+			<StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
 			    <Button Command="{Binding DeleteFileOrDirectoryFromServerCommand}"
-                                Foreground="{StaticResource Second}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="24" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
-					<PathIcon Data="{StaticResource DeleteRegular}"
-                                      Foreground="{StaticResource Accent}" Width="16" Height="16" Margin="3"></PathIcon>
+                	Foreground="{StaticResource Second}" BorderBrush="Transparent" 
+                	CornerRadius="20" HorizontalContentAlignment="Center" Width="30" Height="30" 
+                	FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
+				    <ToolTip.Tip>
+					    <StackPanel>
+						    <TextBlock Text="Remove file from the server"/>
+					    </StackPanel>
+				    </ToolTip.Tip>
+				    <PathIcon Data="{StaticResource DeleteRegular}"
+				              Foreground="{StaticResource Accent}" Width="17" Height="17"/>
 				</Button>
 			    <Button Command="{Binding UploadFileToServerCommand}"
-                                Foreground="{StaticResource Second}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="24" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
-					<PathIcon Data="{StaticResource UploadRegular}"
-                                      Foreground="{StaticResource Accent}" Width="16" Height="16" Margin="3"></PathIcon>
+                    Foreground="{StaticResource Second}" BorderBrush="Transparent" 
+                    CornerRadius="20" HorizontalContentAlignment="Center" Width="30" Height="30" 
+                    FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
+				    <ToolTip.Tip>
+					    <StackPanel>
+						    <TextBlock Text="Upload files into the server from the local list"/>
+					    </StackPanel>
+				    </ToolTip.Tip>
+				    <PathIcon Data="{StaticResource UploadRegular}"
+				              Foreground="{StaticResource Accent}" Width="17" Height="17"/>
 				</Button>
 			    <Button Command="{Binding DownloadToLocalCommand}"
-                                Foreground="{StaticResource Second}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="24" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
-					<PathIcon Data="{StaticResource DownloadRegular}"
-                                      Foreground="{StaticResource Accent}" Width="16" Height="16" Margin="3"></PathIcon>
+                    Foreground="{StaticResource Second}" BorderBrush="Transparent" 
+                    CornerRadius="20" HorizontalContentAlignment="Center" Width="30" Height="30" 
+                    FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" Padding="0">
+				    <ToolTip.Tip>
+					    <StackPanel>
+						    <TextBlock Text="Download file from the server"/>
+					    </StackPanel>
+				    </ToolTip.Tip>
+				    <PathIcon Data="{StaticResource DownloadRegular}"
+				              Foreground="{StaticResource Accent}" Width="17" Height="17"/>
 				</Button>
 			</StackPanel>
 		</Border>
 	    <!-- Server -->
-        <Border ZIndex="1" CornerRadius="10" Grid.Row="1" Grid.Column="2" 
-                Background="{StaticResource Second}" Margin="5,10,10,10">
+        <Border ZIndex="1" CornerRadius="10" Grid.Row="2" Grid.Column="1" 
+                Background="{StaticResource Second}" Margin="5,10,10,0">
             <StackPanel>
 				<Label Content="Server"
 					   HorizontalAlignment="Center" FontFamily="{StaticResource MadeInfinity}" FontWeight="Medium" Foreground="{StaticResource Accent}"></Label>
@@ -100,7 +123,7 @@
                          Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="550" Padding="0" Margin="0">
                     <TreeView ItemsSource="{Binding ServerFiles}" SelectedItem="{Binding SelectedServerItem}" AutoScrollToSelectedItem="True"
-                              Background="{StaticResource Second}" Margin="5" Padding="0" >
+                              Background="{StaticResource Second}" Margin="0" Padding="0">
 	                    <TreeView.Styles>
 		                    <Style Selector="TreeViewItem:selected">
 			                    <Setter Property="IsExpanded" Value="True"/>

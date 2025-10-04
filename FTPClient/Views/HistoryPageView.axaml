@@ -13,7 +13,7 @@
 			<Label Content="History of yours connections"
 				   Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Bold" HorizontalAlignment="Center"></Label>
 			<Separator VerticalAlignment="Center"></Separator>
-			<ListBox ItemsSource="{Binding Connections}" Margin="10,0" Background="Red">
+			<ListBox ItemsSource="{Binding Connections}" Margin="10,0">
 				<ListBox.Template>
 					<ControlTemplate>
 						<DockPanel LastChildFill="True">
@@ -33,20 +33,22 @@
 				</ListBox.Template>
 				<ListBox.ItemTemplate>
 					<DataTemplate>
-						<Grid ColumnDefinitions="150,60,150,*" >
-							<Label Content="{Binding Host}" Grid.Column="0"
-								Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" ></Label>
-							<Label Content="{Binding Port}" Grid.Column="1"
-								Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" ></Label>
-							<Label Content="{Binding Username}" Grid.Column="2"
-								Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" ></Label>
-							<StackPanel Orientation="Horizontal" Grid.Column="3" Spacing="10">
-								<Button Content="Remove" Click="RemoveBtn_Click"
-									Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="70" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
-								<Button Content="Connect" Click="ConnectBtn_Click"
-									Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="70" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
-							</StackPanel>
-						</Grid>
+						<Border CornerRadius="10" Background="{DynamicResource Main}" Padding="5">
+							<Grid ColumnDefinitions="150,60,150,*">
+								<Label Content="{Binding Host}" Grid.Column="0"
+								       Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" />
+								<Label Content="{Binding Port}" Grid.Column="1"
+								       Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" />
+								<Label Content="{Binding Username}" Grid.Column="2"
+								       Foreground="{StaticResource Accent}" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" />
+								<StackPanel Orientation="Horizontal" Grid.Column="3" Spacing="10">
+									<Button Content="Remove" Click="RemoveBtn_Click"
+									        Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="70" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"/>
+									<Button Content="Connect" Click="ConnectBtn_Click"
+									        Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="70" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"/>
+								</StackPanel>
+							</Grid>
+						</Border>
 					</DataTemplate>
 				</ListBox.ItemTemplate>
 			</ListBox>

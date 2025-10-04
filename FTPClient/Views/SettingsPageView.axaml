@@ -19,9 +19,11 @@
 				</TextBlock>
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
 					<Button Command="{Binding ShowAddProfileFormCommand}"
-							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="30" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
+							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="20" 
+							HorizontalContentAlignment="Center" Width="30" Height="30" Padding="0"
+							FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
 						<PathIcon Data="{StaticResource AddRegular}"
-                                      Foreground="{StaticResource Accent}" Width="20" Height="20" Margin="3"></PathIcon>
+                                      Foreground="{StaticResource Accent}" Width="20" Height="20"/>
 					</Button>
 					<TextBox Text="{Binding NewProfile}" IsVisible="{Binding IsTextBoxVisible}" Watermark="✏Profile name"
 							  Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></TextBox>
@@ -39,9 +41,11 @@
 						</ComboBox.ItemTemplate>
 					</ComboBox>
 					<Button Command="{Binding DeleteProfileCommand}"
-							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="30" Height="30" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
+							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="20" 
+							HorizontalContentAlignment="Center" Width="30" Height="30" Padding="0"
+							FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular">
 						<PathIcon Data="{StaticResource DeleteRegular}"
-                                      Foreground="{StaticResource Accent}" Width="20" Height="20" Margin="3"></PathIcon>
+                                      Foreground="{StaticResource Accent}" Width="17" Height="17"/>
 					</Button>
 					<Button Content="Change profile" Command="{Binding ChangeProfileCommand}"
 							HorizontalAlignment="Center" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>

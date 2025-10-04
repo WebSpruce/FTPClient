@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.ReactiveUI;
 using System;
+using HotAvalonia;
 
 namespace FTPClient;
 
@@ -18,6 +19,7 @@ sealed class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .UseHotReload()
             .LogToTrace()
             .UseReactiveUI();
 }
