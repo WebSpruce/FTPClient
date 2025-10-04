@@ -151,9 +151,9 @@
             </StackPanel>
         </Border>
 	    <!-- Right click controls -->
-		<Border x:Name="NewDirectoryForm" CornerRadius="10" Grid.Row="1" Grid.Column="2" ZIndex="2" IsVisible="False"
+		<Border x:Name="NewDirectoryForm" CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2" IsVisible="False"
 				Background="{StaticResource Second}" BorderBrush="{StaticResource Main}" BorderThickness="3" Width="200" Height="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3">
-			<StackPanel Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
+			<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
 				<TextBox Text="{Binding NewDirectoryName}" Watermark="📁Name:"
 					Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" HorizontalContentAlignment="Center"></TextBox>
 				<StackPanel Orientation="Horizontal" Spacing="3">
@@ -164,9 +164,9 @@
 				</StackPanel>
 			</StackPanel>
 		</Border>
-		<Border x:Name="NewFileForm" CornerRadius="10" Grid.Row="1" Grid.Column="2" ZIndex="2" IsVisible="False"
+		<Border x:Name="NewFileForm" CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2" IsVisible="False"
 				Background="{StaticResource Second}" BorderBrush="{StaticResource Main}" BorderThickness="3" Width="200" Height="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3">
-			<StackPanel Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
+			<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
 				<TextBox Text="{Binding NewFileName}" Watermark="📁Name:"
 					Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" HorizontalContentAlignment="Center"></TextBox>
 				<StackPanel Orientation="Horizontal" Spacing="3">
@@ -177,9 +177,9 @@
 				</StackPanel>
 			</StackPanel>
 		</Border>
-		<Border x:Name="RenameForm" CornerRadius="10" Grid.Row="1" Grid.Column="2" ZIndex="2" IsVisible="False"
+		<Border x:Name="RenameForm" CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2" IsVisible="False"
 				Background="{StaticResource Second}" BorderBrush="{StaticResource Main}" BorderThickness="3" Width="200" Height="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3">
-			<StackPanel Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
+			<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
 				<TextBox Text="{Binding NewName}" Watermark="📁New name:"
 					Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Width="150" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular" HorizontalContentAlignment="Center"></TextBox>
 				<StackPanel Orientation="Horizontal" Spacing="3">

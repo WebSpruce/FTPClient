@@ -240,7 +240,7 @@ public partial class HomePageViewModel : ViewModelBase
             if (sftpClient.IsConnected)
             {
                 // ServerFiles.Clear();
-                var rootDir = await LoadSingleLevel(sftpClient, "/", "Root");
+                var rootDir = await _serverOperationService.LoadSingleLevel(sftpClient, "/", "Root");
                 ServerFiles.Add(rootDir);
             }
             
@@ -299,7 +299,7 @@ public partial class HomePageViewModel : ViewModelBase
     
         try
         {
-            var items = await LoadSingleLevel(this.sftpClient, directory.Path, directory.Name);
+            var items = await _serverOperationService.LoadSingleLevel(this.sftpClient, directory.Path, directory.Name);
             // items.FileItems now contains all children with their own placeholders
             foreach (var child in items.FileItems)
                 directory.FileItems.Add(child);
@@ -316,121 +316,7 @@ public partial class HomePageViewModel : ViewModelBase
             directory.IsLoading = false;
         }
     }
-    [RelayCommand]
-    private async Task ItemExpanded(Directory? dir)
-    {
-        if (dir is null) return;
-        await LoadDirectoryChildrenOnDemand(dir);
-    }
-    private void SetBtnsVisibility()
-    {
-        ConnectBtnVisibility = !ConnectBtnVisibility;
-        DisconnectBtnVisibility = !DisconnectBtnVisibility;
-    }
-
-    private async Task<Directory> GetAllDirectories(SftpClient sftpClient, string path)
-    {
-        var directory = new Directory { Name = Path.GetFileName(path), Path = path };
-        try
-        {
-            // files in current dir
-            var listOfFiles = await _serverOperationService.GetAllDirectories(sftpClient, path);
-            var subDirToProcess = listOfFiles.Where(item => item.IsDirectory && item.Name != "." && item.Name != "..")
-                .ToList();
-            var filesInDir = listOfFiles.Where(item => !item.IsDirectory).ToList();
-
-            foreach (var file in filesInDir)
-            {
-                directory.FileItems.Add(new FileItem
-                {
-                    Name = Path.GetFileName(file.FullName),
-                    Path = file.FullName, // fullname is path
-                    Size = file.Attributes.Size.ToString("N0")
-                });
-            }
-
-            var subDirTasks = subDirToProcess.Select(subDir => GetAllDirectories(sftpClient, subDir.FullName));
-
-            var completedSubDir = await Task.WhenAll(subDirTasks);
-                
-            ServerProgressBarValue = 50;
-            foreach (var subDir in completedSubDir)
-                directory.FileItems.Add(subDir);
-            
-        }
-        catch (SftpPermissionDeniedException ex)
-        {
-            Debug.WriteLine($"Permission denied for directory: {path}. {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"GetAllDirectories error: {ex}");
-        }
-
-        return directory;
-    }
-
-    private async Task<Directory> LoadSingleLevel(SftpClient sftpClient, string path, string displayName = null)
-    {
-        var directory = new Directory()
-        {
-            Name = displayName ?? Path.GetFileName(path) ?? path,
-            Path = path,
-            Size = "",
-            ChildrenLoaded = false,
-            HasChildren = true,
-            IsLoading = false
-        };
-
-        try
-        {
-            var items = await _serverOperationService.GetAllDirectories(this.sftpClient, path);
-            
-            var subDirToProcess = items
-                .Where(item => item.IsDirectory && item.Name != "." && item.Name != "..")
-                .ToList();
-            var filesInDir = items.Where(item => !item.IsDirectory).ToList();
-
-            foreach (var file in filesInDir)
-            {
-                directory.FileItems.Add(new FileItem 
-                { 
-                    Name = Path.GetFileName(file.FullName), 
-                    Path = file.FullName,
-                    Size = file.Attributes.Size.ToString("N0") 
-                });
-            }
-            // show only placeholders, loading on demand
-            foreach (var sub in subDirToProcess)
-            {
-                var placeholder = new Directory
-                {
-                    Name = sub.Name,
-                    Path = sub.FullName,
-                    Size = "",
-                    HasChildren = true,
-                    ChildrenLoaded = false
-                };
-                // Seed with one child
-                placeholder.FileItems.Add(new FileItem { Name = "⏳", Path = null, Size = "" });
-                directory.FileItems.Add(placeholder);
-            }
-            directory.ChildrenLoaded = true;
-            directory.HasChildren = subDirToProcess.Any() || filesInDir.Any();
-        }
-        catch (SftpPermissionDeniedException ex)
-        {
-            Debug.WriteLine($"Permission denied for directory: {path}. {ex.Message}");
-            directory.HasChildren = false;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error loading directory {path}: {ex}");
-            directory.HasChildren = false;
-        }
-
-        return directory;
-    }
+    
     [RelayCommand]
     private async void OpenFolder()
     {
@@ -484,7 +370,7 @@ public partial class HomePageViewModel : ViewModelBase
                     SftpFileAttributes attrs = sftpClient.GetAttributes(ServerPath);
                     if(attrs.IsDirectory)
                     {
-                        await _serverOperationService.DeleteDirectory(sftpClient, ServerPath);
+                        await _serverOperationService.DeleteDirectoryRecursively(sftpClient, ServerPath);
                         await MessageBoxManager.GetMessageBoxStandard("Success!", "Directory have just been removed.").ShowAsync();
                     }
                     else
@@ -602,10 +488,6 @@ public partial class HomePageViewModel : ViewModelBase
             await errorMessageBox.ShowAsync();
         }
     }
-    internal void OpenCreateDirectoryForm()
-    {
-        HomePageView.instance.NewDirectoryForm.IsVisible = true;
-    }
     [RelayCommand]
     private async Task CreateNewDirectory()
     {
@@ -639,10 +521,6 @@ public partial class HomePageViewModel : ViewModelBase
     {
         HomePageView.instance.NewDirectoryForm.IsVisible = false;
     }
-    internal void OpenCreateFileForm()
-    {
-        HomePageView.instance.NewFileForm.IsVisible = true;
-    }
     [RelayCommand]
     private async Task CreateNewFile()
     {
@@ -673,16 +551,6 @@ public partial class HomePageViewModel : ViewModelBase
             await errorMessageBox.ShowAsync();
         }
     }
-    internal async Task OpenRenameForm(Directory selectedDirectory)
-    {
-        HomePageView.instance.renameForm.IsVisible = true;
-        NewName = selectedDirectory.Name;
-    }
-    internal async Task OpenRenameForm(FileItem selectedFile)
-    {
-        HomePageView.instance.renameForm.IsVisible = true;
-        NewName = selectedFile.Name;
-    }
     [RelayCommand]
     private void CancelForm()
     {
@@ -711,6 +579,8 @@ public partial class HomePageViewModel : ViewModelBase
             {
                 await MessageBoxManager.GetMessageBoxStandard("Error.", "New name is empty.").ShowAsync();
             }
+
+            NewName = string.Empty;
             HomePageView.instance.renameForm.IsVisible = false;
         }
         catch (Exception ex)
@@ -719,6 +589,32 @@ public partial class HomePageViewModel : ViewModelBase
             await MessageBoxManager.GetMessageBoxStandard("Error", "An unexpected error occurred while renaming.").ShowAsync();
         }
     }
+    
+    private void SetBtnsVisibility()
+    {
+        ConnectBtnVisibility = !ConnectBtnVisibility;
+        DisconnectBtnVisibility = !DisconnectBtnVisibility;
+    }
+    internal void OpenRenameForm(Directory selectedDirectory)
+    {
+        HomePageView.instance.renameForm.IsVisible = true;
+        if(!string.IsNullOrEmpty(selectedDirectory.Name))
+            NewName = selectedDirectory.Name;
+    }
+    internal void OpenRenameForm(FileItem selectedFile)
+    {
+        HomePageView.instance.renameForm.IsVisible = true;
+        if(!string.IsNullOrEmpty(selectedFile.Name))
+            NewName = selectedFile.Name;
+    }
+    internal void OpenCreateFileForm()
+    {
+        HomePageView.instance.NewFileForm.IsVisible = true;
+    }
+    internal void OpenCreateDirectoryForm()
+    {
+        HomePageView.instance.NewDirectoryForm.IsVisible = true;
+    }
     private async Task ResetServerList()
     {
         ServerFiles.Clear();
@@ -726,7 +622,7 @@ public partial class HomePageViewModel : ViewModelBase
         ServerProgressBarValue = 50;
         if (sftpClient.IsConnected)
         {
-            var rootDir = await LoadSingleLevel(sftpClient, "/", "Root");
+            var rootDir = await _serverOperationService.LoadSingleLevel(sftpClient, "/", "Root");
             ServerFiles.Add(rootDir);
             ServerProgressBarValue = 100;
         }
