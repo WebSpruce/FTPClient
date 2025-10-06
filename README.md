@@ -12,9 +12,3 @@ Thanks to the user interface, the user has the ability to upload and download fi
 ☁ A convenient way of saving connection strings in the history page allows you to quickly set the required information.
 
 🧰The project was created with the help of **repository pattern**, **dependency injection** and **MVVM**.
-
-### 📝Todo
-- [x] History Page (with local database - sqlite)
-- [x] Operations on server files like (creating a new file, directory, rename)
-- [x] Colors for settings profiles
-- [ ] Optimization
