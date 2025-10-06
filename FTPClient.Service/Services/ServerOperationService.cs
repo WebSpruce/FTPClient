@@ -1,4 +1,7 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using FTPClient.Models;
+using FTPClient.Service.Helper;
 using FTPClient.Service.Interfaces;
 using Renci.SshNet;
 using Renci.SshNet.Common;
@@ -143,7 +146,7 @@ public class ServerOperationService : IServerOperationService
                 { 
                     Name = Path.GetFileName(file.FullName), 
                     Path = file.FullName,
-                    Size = file.Attributes.Size.ToString("N0") 
+                    Size = DataFormating.FormatFileSize(file.Attributes.Size) 
                 });
             }
             // show only placeholders, loading on demand
@@ -161,6 +164,8 @@ public class ServerOperationService : IServerOperationService
                 placeholder.FileItems.Add(new Models.FileItem { Name = "⏳", Path = null, Size = "" });
                 directory.FileItems.Add(placeholder);
             }
+
+            directory.FileItems = new ObservableCollection<FileItem>(directory.FileItems.OrderBy(x => x.Name).ToList());
             directory.ChildrenLoaded = true;
             directory.HasChildren = subDirToProcess.Any() || filesInDir.Any();
         }

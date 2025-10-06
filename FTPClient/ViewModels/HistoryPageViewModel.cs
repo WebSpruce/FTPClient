@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using FTPClient.Session;
 
 namespace FTPClient.ViewModels;
 
@@ -44,8 +45,9 @@ public partial class HistoryPageViewModel : ViewModelBase
     {
         try
         {
-            MainWindowViewModel.instance.SelectedListItem = new ListItemTemplate(typeof(HomePageViewModel), "HomeRegular");
+            MainWindowViewModel.instance.SelectedListItemMain = new ListItemTemplate(typeof(HomePageViewModel), "HomeRegular");
             MainWindowViewModel.instance.CurrentPage = new HomePageViewModel(connection);
+            SessionConnection.Instance.ClearSession();
         }
         catch (Exception ex)
         {

@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using FTPClient.Helper;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
+using FTPClient.Session;
 using FTPClient.Views;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,8 +24,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private ViewModelBase _currentPage = new HomePageViewModel();
     
-    [ObservableProperty] 
-    private ListItemTemplate? _selectedListItem;
+    [ObservableProperty] private ListItemTemplate? _selectedListItemMain;
+    [ObservableProperty] private ListItemTemplate? _selectedListItemFooter;
 
     [ObservableProperty] 
     private string? _currentProfileIcon;
@@ -71,21 +72,36 @@ public partial class MainWindowViewModel : ViewModelBase
         MainWindow.instance.ProfileIcon.Foreground = new SolidColorBrush(foregroundColor);
         MainWindow.instance.ProfileIcon.Background = new SolidColorBrush(profileColor);
     }
-    async partial void OnSelectedListItemChanged(ListItemTemplate? item)
+
+    partial void OnSelectedListItemMainChanged(ListItemTemplate? item)
     {
-        if (item is null)
-        {
-            return;
-        }
+        if(item is null) return;
+
+        _selectedListItemFooter = null; //clear the footer list selection to prevent dual selection
+        OnPropertyChanged(nameof(SelectedListItemFooter));
+        NavigateToSelectedPage(item);
+    }
+    partial void OnSelectedListItemFooterChanged(ListItemTemplate? item)
+    {
+        if(item is null) return;
+
+        _selectedListItemMain = null; //clear the main list selection to prevent dual selection
+        OnPropertyChanged(nameof(SelectedListItemMain));
+        NavigateToSelectedPage(item);
+    }
+    private void NavigateToSelectedPage(ListItemTemplate? item)
+    {
+        if (item is null) return;
 
         if (item.ModelType == typeof(ExitPageViewModel))
         {
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp)
             {
+                SessionConnection.Instance.ClearSession();
                 desktopApp.Shutdown();
             }
+            return;
         }
-
 
         if (!pagesDictionary.ContainsKey(CurrentPage.GetType()))
         {
@@ -109,8 +125,6 @@ public partial class MainWindowViewModel : ViewModelBase
             CurrentPage = (ViewModelBase)instance;
             pagesDictionary.Add(modelType, CurrentPage);
         }
-
-
     }
     
     [RelayCommand]

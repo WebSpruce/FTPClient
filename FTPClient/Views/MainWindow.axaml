@@ -31,7 +31,7 @@
                             <PathIcon Data="{StaticResource LineHorizontal3Regular}" HorizontalAlignment="Left"
                                       Foreground="{StaticResource Accent}" Width="25" Height="25" Margin="3"/>
                             </Button>
-                            <ListBox ItemsSource="{Binding MainMenuItems}" SelectedItem="{Binding SelectedListItem}"
+                            <ListBox ItemsSource="{Binding MainMenuItems}" SelectedItem="{Binding SelectedListItemMain}"
                                 Background="{StaticResource Main}">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:ListItemTemplate}">
@@ -51,7 +51,7 @@
 								   CornerRadius="20" Foreground="{StaticResource Accent}" 
                                    FontFamily="{StaticResource MadeInfinity}" FontSize="17" FontWeight="Regular" 
                                    HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center" Width="30" Margin="8,0,0,5" Padding="5,3"/>
-                            <ListBox ItemsSource="{Binding FooterMenuItems}" SelectedItem="{Binding SelectedListItem}"
+                            <ListBox ItemsSource="{Binding FooterMenuItems}" SelectedItem="{Binding SelectedListItemFooter}"
                                      Background="{StaticResource Main}" VerticalAlignment="Bottom">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:ListItemTemplate}">

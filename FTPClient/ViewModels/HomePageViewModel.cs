@@ -15,12 +15,12 @@ using FTPClient.Database.Interfaces;
 using FTPClient.Models;
 using FTPClient.Models.Models;
 using FTPClient.Service.Interfaces;
+using FTPClient.Session;
 using FTPClient.Views;
 using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using Renci.SshNet;
-using Renci.SshNet.Common;
 using Renci.SshNet.Sftp;
 using Directory = FTPClient.Models.Directory;
 using File = System.IO.File;
@@ -198,14 +198,7 @@ public partial class HomePageViewModel : ViewModelBase
 
         var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
-        if(currentProfile.ProfileSettings != null)
-        {
-            LocalPath = currentProfile.ProfileSettings.LocalPath;
-        }
-        else
-        {
-            LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        }
+        LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
     }
     public HomePageViewModel(Connection connection)
     {
@@ -217,8 +210,27 @@ public partial class HomePageViewModel : ViewModelBase
         var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
         LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
         Host = connection.Host; Port = connection.Port.ToString(); Username = connection.Username; 
+    }
+
+    internal async Task OnLoad()
+    {
+        if (SessionConnection.Instance.CurrentConnection != null)
+        {
+            Host = SessionConnection.Instance.CurrentConnection.Host;
+            Port = SessionConnection.Instance.CurrentConnection.Port.ToString();
+            Username = SessionConnection.Instance.CurrentConnection.Username;
+            if (SessionConnection.Instance.CurrentSftpClient is not null)
+            {
+                this.sftpClient = SessionConnection.Instance.CurrentSftpClient;
+                ConnectBtnVisibility = false;
+                DisconnectBtnVisibility = true;
+                ServerFiles.Clear();
+                ServerPath = "/";
+                var rootDir = await _serverOperationService.LoadSingleLevel(sftpClient, "/", "Root");
+                ServerFiles.Add(rootDir);
+            }
+        }
     }
     
     [RelayCommand]
@@ -239,7 +251,15 @@ public partial class HomePageViewModel : ViewModelBase
             sftpClient = await _serverOperationService.ConnectToServer(Host,  Username, Password, int.Parse(Port));
             if (sftpClient.IsConnected)
             {
-                // ServerFiles.Clear();
+                SessionConnection.Instance.CurrentConnection = new Connection()
+                {
+                    Host = Host,
+                    Username = Username,
+                    Port = int.Parse(Port),
+                    Id = 0
+                };
+                ServerFiles.Clear();
+                SessionConnection.Instance.CurrentSftpClient = sftpClient;
                 var rootDir = await _serverOperationService.LoadSingleLevel(sftpClient, "/", "Root");
                 ServerFiles.Add(rootDir);
             }
@@ -276,6 +296,7 @@ public partial class HomePageViewModel : ViewModelBase
                 {
                     ServerFiles.Clear();
                     ServerPath = "/";
+                    SessionConnection.Instance.ClearSession();
                 }
             }
             SetBtnsVisibility();

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using FTPClient.Models;
 using FTPClient.Models.Models;
 using FTPClient.ViewModels;
@@ -19,14 +20,23 @@ public partial class HomePageView : UserControl
         newDirectoryForm = NewDirectoryForm;
         newFileForm = NewFileForm;
         renameForm = RenameForm;
+        this.Loaded += OnLoaded;
         instance = this;
         DataContext = new HomePageViewModel();
     }
     public HomePageView(Connection connection)
     {
         InitializeComponent();
+        this.Loaded += OnLoaded;
         instance = this;
         DataContext = new HomePageViewModel(connection);
+    }
+    private async void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is HomePageViewModel viewModel)
+        {
+            await viewModel.OnLoad();
+        }
     }
     private async void PasteKeyDownCommand(object sender, KeyEventArgs e)
     {
