@@ -26,6 +26,8 @@ public partial class MainWindowViewModel : ViewModelBase
     
     [ObservableProperty] private ListItemTemplate? _selectedListItemMain;
     [ObservableProperty] private ListItemTemplate? _selectedListItemFooter;
+    [ObservableProperty] private SolidColorBrush? _profileIconForeground = new SolidColorBrush(Color.FromRgb(153,170,181));
+    [ObservableProperty] private SolidColorBrush? _profileIconBackground = new SolidColorBrush(Colors.Transparent);
 
     [ObservableProperty] 
     private string? _currentProfileIcon;
@@ -42,10 +44,12 @@ public partial class MainWindowViewModel : ViewModelBase
     };
     public static MainWindowViewModel instance;
     internal Dictionary<Type, ViewModelBase> pagesDictionary = new Dictionary<Type, ViewModelBase>();
-    public MainWindowViewModel()
+    private readonly IServiceProvider _serviceProvider;
+    public MainWindowViewModel(IServiceProvider serviceProvider)
     {
         instance = this;
 
+        _serviceProvider = serviceProvider;
         var _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
         var currentProfile = _filesAndDirectoriesService.GetCurrentProfile();
 
@@ -69,8 +73,8 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         Color foregroundColor = DarkOrLightColor.IsLightColor(profileColor) ? Color.FromRgb(36, 39, 42) : Color.FromRgb(107, 139, 161);
-        MainWindow.instance.ProfileIcon.Foreground = new SolidColorBrush(foregroundColor);
-        MainWindow.instance.ProfileIcon.Background = new SolidColorBrush(profileColor);
+        ProfileIconForeground = new SolidColorBrush(foregroundColor);
+        ProfileIconBackground = new SolidColorBrush(profileColor);
     }
 
     partial void OnSelectedListItemMainChanged(ListItemTemplate? item)
@@ -116,7 +120,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         else
         {
-            var instance = Activator.CreateInstance(modelType);
+            var instance = _serviceProvider.GetRequiredService(modelType);
             if (instance is null)
             {
                 return;

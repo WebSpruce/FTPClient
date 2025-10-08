@@ -9,27 +9,23 @@ namespace FTPClient.Database.Repository
 {
     public class ConnectionsRepository : IConnectionsRepository
     {
-        private AppDbContext _context;
-        public ConnectionsRepository()
+        private readonly IDbContextFactory<AppDbContext> _context;
+        public ConnectionsRepository(IDbContextFactory<AppDbContext> context)
         {
-            var services = new ServiceCollection();
-            services.AddDbContext<AppDbContext>();
-            var serviceProvider = services.BuildServiceProvider();
-
-            _context = serviceProvider.GetService<AppDbContext>();
-
-            _context.Database.EnsureCreatedAsync().Wait();
+            _context = context;
         }
         public async Task<List<Connection>> GetAllConnections()
         {
-            return await _context.Connections.ToListAsync();
+            await using var context = await _context.CreateDbContextAsync();
+            return await context.Connections.ToListAsync();
         }
         public async Task SaveConnection(Connection connection)
         {
             try
             {
-                await _context.Connections.AddAsync(connection);
-                await _context.SaveChangesAsync();
+                await using var context = await _context.CreateDbContextAsync();
+                await context.Connections.AddAsync(connection);
+                await context.SaveChangesAsync();
             }catch(Exception ex)
             {
                 Debug.WriteLine($"ConnectionRepository SaveConnection error: {ex}");
@@ -39,9 +35,13 @@ namespace FTPClient.Database.Repository
         {
             try
             {
-                var item = _context.Connections.Where(c=>c.Id == connection.Id).FirstOrDefault();
-                _context.Connections.Remove(item);
-                await _context.SaveChangesAsync();
+                await using var context = await _context.CreateDbContextAsync();
+                var item = context.Connections.FirstOrDefault(c=>c.Id == connection.Id);
+                if (item is not null)
+                {
+                    context.Connections.Remove(item);
+                    await context.SaveChangesAsync();
+                }
             }catch(Exception ex)
             {
                 Debug.WriteLine($"ConnectionRepository DeleteConnection error: {ex}");

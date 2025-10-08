@@ -48,7 +48,8 @@
                         </StackPanel>
                         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom">
 							<Label x:Name="ProfileIcon" Content="{Binding CurrentProfileIcon}"
-								   CornerRadius="20" Foreground="{StaticResource Accent}" 
+								   CornerRadius="20" Foreground="{Binding ProfileIconForeground}" 
+                                   Background="{Binding ProfileIconBackground}"
                                    FontFamily="{StaticResource MadeInfinity}" FontSize="17" FontWeight="Regular" 
                                    HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center" Width="30" Margin="8,0,0,5" Padding="5,3"/>
                             <ListBox ItemsSource="{Binding FooterMenuItems}" SelectedItem="{Binding SelectedListItemFooter}"

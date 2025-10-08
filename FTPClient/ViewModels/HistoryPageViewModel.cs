@@ -16,6 +16,8 @@ namespace FTPClient.ViewModels;
 public partial class HistoryPageViewModel : ViewModelBase
 {
     [ObservableProperty]
+    private ViewModelBase _currentPage = new HomePageViewModel();
+    [ObservableProperty]
     private List<Connection> _connections = new();
     private IConnectionsRepository _connectionRepository;
     public static HistoryPageViewModel instance;
@@ -23,24 +25,12 @@ public partial class HistoryPageViewModel : ViewModelBase
     {
         instance = this;
         _connectionRepository = connectionsRepository;
-        Connections = _connectionRepository.GetAllConnections().Result;
+        Task.Run(async () => Connections = await _connectionRepository.GetAllConnections());
     } 
-    public HistoryPageViewModel()
-    {
-        instance = this;
-        var services = new ServiceCollection();
-        services.AddScoped<IConnectionsRepository, ConnectionsRepository>();
-        var serviceProvider = services.BuildServiceProvider();
-        _connectionRepository = serviceProvider.GetService<IConnectionsRepository>();
-
-        LoadConnections();
-    }
-    private async Task LoadConnections()
+    internal async Task OnLoad()
     {
         Connections = await _connectionRepository.GetAllConnections();
     }
-    [ObservableProperty]
-    private ViewModelBase _currentPage = new HomePageViewModel();
     public async Task Connect(Connection connection)
     {
         try
@@ -63,7 +53,7 @@ public partial class HistoryPageViewModel : ViewModelBase
             await _connectionRepository.DeleteConnection(connection);
             var savedMessageBox = MessageBoxManager.GetMessageBoxStandard("Success.", "The connection string has been deleted.");
             await savedMessageBox.ShowAsync();
-            await LoadConnections();
+            Connections = _connectionRepository.GetAllConnections().Result;
         }
         catch (Exception ex)
         {
