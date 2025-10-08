@@ -12,7 +12,6 @@ public partial class SettingsPageView : UserControl
     {
         InitializeComponent();
         instance = this;
-        DataContext = new SettingsPageViewModel();
     }
 
     private void ComboBox_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)

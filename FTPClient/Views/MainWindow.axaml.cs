@@ -12,11 +12,16 @@ public partial class MainWindow : Window
     private PointerPoint _originalPoint;
     public bool isWindowHover = false;
     public static MainWindow instance;
+    public MainWindow(MainWindowViewModel viewModel)
+    {
+        InitializeComponent();
+        instance = this;
+        DataContext = viewModel;
+    }
     public MainWindow()
     {
         InitializeComponent();
         instance = this;
-        DataContext = new MainWindowViewModel();
     }
 
     private void InputElement_OnPointerMoved(object? sender, PointerEventArgs e)

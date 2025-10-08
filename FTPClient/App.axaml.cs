@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using FTPClient.Database.Data;
 using FTPClient.Database.Interfaces;
 using FTPClient.Database.Repository;
 using FTPClient.Models;
@@ -13,13 +15,13 @@ using FTPClient.Service.Services;
 using FTPClient.ViewModels;
 using FTPClient.Views;
 using HotAvalonia;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FTPClient;
 
 public partial class App : Application
 {
-    internal string currentProfileName = string.Empty;
     public IServiceProvider Services { get; private set; }
     public static App instance;
     public App()
@@ -35,12 +37,14 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        using (var scope = Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Database.EnsureCreated();
+        }
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = new MainWindowViewModel(),
-            };
+            desktop.MainWindow = Services.GetRequiredService<MainWindow>();
         }
 
         IFilesAndDirectoriesService _filesAndDirectoriesService = new FilesAndDirectoriesService();
@@ -72,6 +76,12 @@ public partial class App : Application
     private void ConfigureServices()
     {
         var services = new ServiceCollection();
+        services.AddDbContextFactory<AppDbContext>(options =>
+        {
+            options.UseSqlite($"Data Source={Path.Join(AppDomain.CurrentDomain.BaseDirectory, "connections.db")}" ??
+                              throw new InvalidOperationException("Connection string 'DefaultConnection' not found."));
+        });
+        
         services.AddSingleton<IServerOperationService, ServerOperationService>();
         services.AddSingleton<IFilesAndDirectoriesService, FilesAndDirectoriesService>();
         services.AddScoped<IConnectionsRepository, ConnectionsRepository>();
