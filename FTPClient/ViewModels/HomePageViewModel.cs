@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
@@ -189,6 +190,7 @@ public partial class HomePageViewModel : ViewModelBase
     private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
     private readonly IConnectionsRepository _connectionsRepository;
     public static HomePageViewModel instance;
+    public ICommand DirectoryExpandedCommand { get; }
     public HomePageViewModel()
     {
         instance = this;
@@ -199,6 +201,7 @@ public partial class HomePageViewModel : ViewModelBase
         var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
         LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        DirectoryExpandedCommand = new AsyncRelayCommand<Directory>(LoadDirectoryChildrenOnDemand);
     }
     public HomePageViewModel(Connection connection)
     {
@@ -211,6 +214,7 @@ public partial class HomePageViewModel : ViewModelBase
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
         LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         Host = connection.Host; Port = connection.Port.ToString(); Username = connection.Username; 
+        DirectoryExpandedCommand = new AsyncRelayCommand<Directory>(LoadDirectoryChildrenOnDemand);
     }
 
     internal async Task OnLoad()

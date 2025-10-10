@@ -31,6 +31,13 @@ public partial class HomePageView : UserControl
         instance = this;
         DataContext = new HomePageViewModel(connection);
     }
+
+    public void OnDemand(Directory dir)
+    {
+        var viewModel = this.DataContext as HomePageViewModel;
+        if (viewModel == null) return;
+        viewModel.LoadDirectoryChildrenOnDemand(dir);
+    }
     private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (DataContext is HomePageViewModel viewModel)

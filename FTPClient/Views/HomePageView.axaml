@@ -6,12 +6,23 @@
              x:Class="FTPClient.Views.HomePageView"
              xmlns:vm="using:FTPClient.ViewModels"
              xmlns:models="using:FTPClient.Models"
+             xmlns:local="using:FTPClient.Helper"
              x:DataType="vm:HomePageViewModel"
-             Background="#2c2f33">
+             Background="#2c2f33"
+             x:Name="RootControl">
+	
+	<UserControl.DataContext>
+		<vm:HomePageViewModel/>
+	</UserControl.DataContext>
     
-    <UserControl.KeyBindings>
+	<UserControl.KeyBindings>
         <KeyBinding Gesture="Enter" Command="{Binding ConnectToServerCommand}"></KeyBinding>
     </UserControl.KeyBindings>
+	
+	<UserControl.Resources>
+		<local:BoolToGlyphConverter x:Key="BoolToGlyphConverter"/>
+		<local:IsDirectoryToBoolConverter x:Key="IsDirectoryToBoolConverter"/>
+	</UserControl.Resources>
     
     <Grid ColumnDefinitions="*,*" RowDefinitions="60,35,*">
 	    <!-- Header -->
@@ -125,8 +136,41 @@
                     <TreeView ItemsSource="{Binding ServerFiles}" SelectedItem="{Binding SelectedServerItem}" AutoScrollToSelectedItem="True"
                               Background="{StaticResource Second}" Margin="0" Padding="0">
 	                    <TreeView.Styles>
-		                    <Style Selector="TreeViewItem:selected">
-			                    <Setter Property="IsExpanded" Value="True"/>
+		                    <!-- Custom treeviewitem style -->
+		                    <Style Selector="TreeViewItem">
+			                    <Setter Property="Template">
+				                    <ControlTemplate>
+					                    <Border Name="PART_RootBorder"
+					                            Background="Transparent"
+					                            BorderBrush="{TemplateBinding BorderBrush}"
+					                            BorderThickness="{TemplateBinding BorderThickness}">
+						                    <StackPanel>
+							                    <DockPanel>
+								                    <!-- TemplatedParent it gets Directory object from TreeViewItem as DataContext -->
+								                    <ToggleButton
+									                    DockPanel.Dock="Left"
+									                    Width="20" Height="20" Margin="0" Padding="0"
+									                    Background="Transparent" FontSize="10"
+									                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+									                    IsChecked="{TemplateBinding IsExpanded, Mode=TwoWay}"
+									                    Command="{Binding OnDemand, ElementName=RootControl}"
+									                    CommandParameter="{Binding DataContext, RelativeSource={RelativeSource TemplatedParent}}"
+									                    Content="{Binding IsChecked, RelativeSource={RelativeSource Self}, Converter={StaticResource BoolToGlyphConverter}}"
+									                    IsVisible="{Binding DataContext, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IsDirectoryToBoolConverter}}"
+									                    />
+													
+								                    <!-- it inserts the header object next to the togglebutton -->
+								                    <ContentPresenter Name="PART_HeaderPresenter"
+									                    Content="{TemplateBinding Header}"
+									                    Margin="2" VerticalAlignment="Center"/>
+							                    </DockPanel>
+												<!-- it renders the control’s items collection -->
+							                    <ItemsPresenter Name="PART_ItemsPresenter" 
+								                    Margin="16,0,0,0" IsVisible="{TemplateBinding IsExpanded}"/>
+						                    </StackPanel>
+					                    </Border>
+				                    </ControlTemplate>
+			                    </Setter>
 		                    </Style>
 	                    </TreeView.Styles>
 	                    <TreeView.DataTemplates>
