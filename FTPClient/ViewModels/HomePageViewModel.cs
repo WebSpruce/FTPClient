@@ -198,9 +198,6 @@ public partial class HomePageViewModel : ViewModelBase
         _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
         _connectionsRepository = ((App)Application.Current).Services.GetRequiredService<IConnectionsRepository>();
 
-        var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
-        var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
-        LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         DirectoryExpandedCommand = new AsyncRelayCommand<Directory>(LoadDirectoryChildrenOnDemand);
     }
     public HomePageViewModel(Connection connection)
@@ -209,21 +206,22 @@ public partial class HomePageViewModel : ViewModelBase
         _serverOperationService = ((App)Application.Current).Services.GetRequiredService<IServerOperationService>();
         _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
         _connectionsRepository = ((App)Application.Current).Services.GetRequiredService<IConnectionsRepository>();
-
-        var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
-        var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
-        LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        
         Host = connection.Host; Port = connection.Port.ToString(); Username = connection.Username; 
         DirectoryExpandedCommand = new AsyncRelayCommand<Directory>(LoadDirectoryChildrenOnDemand);
     }
 
     internal async Task OnLoad()
     {
+        var profileName = _filesAndDirectoriesService.GetCurrentProfile();
+        var currentProfile = _filesAndDirectoriesService.GetUserSettings(profileName);
+        LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         if (SessionConnection.Instance.CurrentConnection != null)
         {
             Host = SessionConnection.Instance.CurrentConnection.Host;
             Port = SessionConnection.Instance.CurrentConnection.Port.ToString();
             Username = SessionConnection.Instance.CurrentConnection.Username;
+            
             if (SessionConnection.Instance.CurrentSftpClient is not null)
             {
                 this.sftpClient = SessionConnection.Instance.CurrentSftpClient;
