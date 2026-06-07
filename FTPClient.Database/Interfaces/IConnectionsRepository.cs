@@ -4,8 +4,8 @@ namespace FTPClient.Database.Interfaces
 {
     public interface IConnectionsRepository
     {
-        Task<List<Connection>> GetAllConnections();
-        Task SaveConnection(Connection connection);
-        Task DeleteConnection(Connection connection);
+        Task<List<Connection>> GetAllConnections(CancellationToken token);
+        Task SaveConnection(Connection connection, CancellationToken token);
+        Task DeleteConnection(Connection connection, CancellationToken token);
     }
 }
