@@ -6,12 +6,14 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using CommunityToolkit.Mvvm.Messaging;
 using FTPClient.Database.Data;
 using FTPClient.Database.Interfaces;
 using FTPClient.Database.Repository;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Service.Services;
+using FTPClient.Session;
 using FTPClient.ViewModels;
 using FTPClient.Views;
 using HotAvalonia;
@@ -81,12 +83,15 @@ public partial class App : Application
             options.UseSqlite($"Data Source={Path.Join(AppDomain.CurrentDomain.BaseDirectory, "connections.db")}" ??
                               throw new InvalidOperationException("Connection string 'DefaultConnection' not found."));
         });
+
+        services.AddSingleton<ISessionConnection, SessionConnection>();
+        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         
         services.AddSingleton<IServerOperationService, ServerOperationService>();
         services.AddSingleton<IFilesAndDirectoriesService, FilesAndDirectoriesService>();
         services.AddScoped<IConnectionsRepository, ConnectionsRepository>();
         
-        services.AddSingleton<HomePageViewModel>();
+        services.AddSingleton<IHomePageViewModelFactory, HomePageViewModelFactory>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddTransient<SettingsPageViewModel>();
         services.AddTransient<HistoryPageViewModel>();

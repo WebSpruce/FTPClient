@@ -5,9 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -17,11 +19,8 @@ using FTPClient.Models;
 using FTPClient.Models.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Session;
-using FTPClient.Views;
-using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
-using Renci.SshNet;
 using Renci.SshNet.Sftp;
 using Directory = FTPClient.Models.Directory;
 using File = System.IO.File;
@@ -81,10 +80,6 @@ public partial class HomePageViewModel : ViewModelBase
     private ObservableCollection<Directory> _localFiles = new();
     [ObservableProperty]
     private string _localPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-
-    private SftpClient sftpClient;
-
     
     private Directory _selectedDirectory;
     public Directory SelectedDirectory
@@ -184,30 +179,51 @@ public partial class HomePageViewModel : ViewModelBase
     private string _newFileName = string.Empty;
     [ObservableProperty]
     private string _newName = string.Empty;
-
-
-    private readonly IServerOperationService _serverOperationService;
-    private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
-    private readonly IConnectionsRepository _connectionsRepository;
+    
+    [ObservableProperty]
+    private bool _isCreateDirectoryFormVisible = false;
+    [ObservableProperty]
+    private bool _isCreateFileFormVisible = false;
+    [ObservableProperty]
+    private bool _isRenameFormVisible = false;
+    
+    private IServerOperationService _serverOperationService;
+    private IFilesAndDirectoriesService _filesAndDirectoriesService;
+    private IConnectionsRepository _connectionsRepository;
+    private ISessionConnection _sessionConnection;
+    private CancellationTokenSource _ctsSource;
+    private CancellationToken _cts;
     public static HomePageViewModel instance;
-    public ICommand DirectoryExpandedCommand { get; }
-    public HomePageViewModel()
+    public ICommand DirectoryExpandedCommand { get; set; }
+    public HomePageViewModel() { }
+    public HomePageViewModel(IServerOperationService serverOperationService,
+        IFilesAndDirectoriesService filesAndDirectoriesService,
+        IConnectionsRepository connectionsRepository,
+        ISessionConnection sessionConnection,
+        Connection? connection = null)
     {
-        instance = this;
-        _serverOperationService = ((App)Application.Current).Services.GetRequiredService<IServerOperationService>();
-        _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
-        _connectionsRepository = ((App)Application.Current).Services.GetRequiredService<IConnectionsRepository>();
-
-        DirectoryExpandedCommand = new AsyncRelayCommand<Directory>(LoadDirectoryChildrenOnDemand);
+        Initialize(serverOperationService, filesAndDirectoriesService, connectionsRepository, sessionConnection);
+        if (connection is not null)
+        {
+            Host = connection.Host;
+            Port = connection.Port.ToString();
+            Username = connection.Username;
+        }
     }
-    public HomePageViewModel(Connection connection)
+
+    private void Initialize(IServerOperationService serverOperationService,
+        IFilesAndDirectoriesService filesAndDirectoriesService,
+        IConnectionsRepository connectionsRepository,
+        ISessionConnection sessionConnection)
     {
-        instance = this;
-        _serverOperationService = ((App)Application.Current).Services.GetRequiredService<IServerOperationService>();
-        _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
-        _connectionsRepository = ((App)Application.Current).Services.GetRequiredService<IConnectionsRepository>();
+        _sessionConnection = sessionConnection;
+        _serverOperationService = serverOperationService;
+        _filesAndDirectoriesService = filesAndDirectoriesService;
+        _connectionsRepository = connectionsRepository;
+
+        _ctsSource = new CancellationTokenSource();
+        _cts = _ctsSource.Token;
         
-        Host = connection.Host; Port = connection.Port.ToString(); Username = connection.Username; 
         DirectoryExpandedCommand = new AsyncRelayCommand<Directory>(LoadDirectoryChildrenOnDemand);
     }
 
@@ -216,27 +232,32 @@ public partial class HomePageViewModel : ViewModelBase
         var profileName = _filesAndDirectoriesService.GetCurrentProfile();
         var currentProfile = _filesAndDirectoriesService.GetUserSettings(profileName);
         LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        if (SessionConnection.Instance.CurrentConnection != null)
+        if (_sessionConnection.CurrentConnection != null)
         {
-            Host = SessionConnection.Instance.CurrentConnection.Host;
-            Port = SessionConnection.Instance.CurrentConnection.Port.ToString();
-            Username = SessionConnection.Instance.CurrentConnection.Username;
+            Host = _sessionConnection.CurrentConnection.Host;
+            Port = _sessionConnection.CurrentConnection.Port.ToString();
+            Username = _sessionConnection.CurrentConnection.Username;
             
-            if (SessionConnection.Instance.CurrentSftpClient is not null)
+            if (_sessionConnection.CurrentSftpClient is not null)
             {
-                this.sftpClient = SessionConnection.Instance.CurrentSftpClient;
                 ConnectBtnVisibility = false;
                 DisconnectBtnVisibility = true;
                 ServerFiles.Clear();
                 ServerPath = "/";
-                var rootDir = await _serverOperationService.LoadSingleLevel(sftpClient, "/", "Root");
-                ServerFiles.Add(rootDir);
+                
+                var rootDirResult = await _serverOperationService.LoadSingleLevel(_sessionConnection.CurrentSftpClient, "/", _cts, "Root");
+                if (!rootDirResult.IsSuccess)
+                {
+                    var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", $"Loading data error: {rootDirResult.Errors}.");
+                    await errorMessageBox.ShowAsync();
+                }
+                ServerFiles.Add(rootDirResult.Value);
             }
         }
     }
     
     [RelayCommand]
-    private async Task ConnectToServer()
+    private async Task ConnectToServer(CancellationToken token)
     {
         try
         {
@@ -250,10 +271,17 @@ public partial class HomePageViewModel : ViewModelBase
                 return;
             }
             
-            sftpClient = await _serverOperationService.ConnectToServer(Host,  Username, Password, int.Parse(Port));
-            if (sftpClient.IsConnected)
+            var connectResult = await _serverOperationService.ConnectToServer(Host,  Username, Password, int.Parse(Port), token);
+            if (!connectResult.IsSuccess)
             {
-                SessionConnection.Instance.CurrentConnection = new Connection()
+                var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", $"Connecting error: {connectResult.Errors}.");
+                await errorMessageBox.ShowAsync();
+            }
+
+            _sessionConnection.CurrentSftpClient = connectResult.Value;
+            if (_sessionConnection.IsConnected)
+            {
+                _sessionConnection.CurrentConnection = new Connection()
                 {
                     Host = Host,
                     Username = Username,
@@ -261,9 +289,14 @@ public partial class HomePageViewModel : ViewModelBase
                     Id = 0
                 };
                 ServerFiles.Clear();
-                SessionConnection.Instance.CurrentSftpClient = sftpClient;
-                var rootDir = await _serverOperationService.LoadSingleLevel(sftpClient, "/", "Root");
-                ServerFiles.Add(rootDir);
+                
+                var rootDirResult = await _serverOperationService.LoadSingleLevel(_sessionConnection.CurrentSftpClient, "/", token, "Root");
+                if (!connectResult.IsSuccess)
+                {
+                    var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", $"Loading error: {rootDirResult.Errors}.");
+                    await errorMessageBox.ShowAsync();
+                }
+                ServerFiles.Add(rootDirResult.Value);
             }
             
             SetBtnsVisibility();
@@ -277,7 +310,7 @@ public partial class HomePageViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Connect to the server error : {ex}");
+            Debug.WriteLine($"Connect to the server error : {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", "Couldn't connect to the server.");
             await errorMessageBox.ShowAsync();
         }
@@ -291,14 +324,14 @@ public partial class HomePageViewModel : ViewModelBase
     {
         try
         {
-            if (sftpClient.IsConnected)
+            if (_sessionConnection.IsConnected)
             {
-                sftpClient = _serverOperationService.DisconnectFromServer(sftpClient);
-                if (!sftpClient.IsConnected)
+                _serverOperationService.Disconnect(_sessionConnection.CurrentSftpClient);
+                if (!_sessionConnection.IsConnected)
                 {
                     ServerFiles.Clear();
                     ServerPath = "/";
-                    SessionConnection.Instance.ClearSession();
+                    _sessionConnection.ClearSession();
                 }
             }
             SetBtnsVisibility();
@@ -306,7 +339,7 @@ public partial class HomePageViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Disconnect from the server error : {ex}");
+            Debug.WriteLine($"Disconnect from the server error : {ex.Message} - {ex.InnerException}");
         }
     }
     [RelayCommand]
@@ -322,7 +355,10 @@ public partial class HomePageViewModel : ViewModelBase
     
         try
         {
-            var items = await _serverOperationService.LoadSingleLevel(this.sftpClient, directory.Path, directory.Name);
+            var loadSingleLevelResult = await _serverOperationService.LoadSingleLevel(_sessionConnection.CurrentSftpClient, directory.Path, _cts, directory.Name);
+            if(!loadSingleLevelResult.IsSuccess)
+                await MessageBoxManager.GetMessageBoxStandard("Error.", $"Load single level error: {loadSingleLevelResult.Errors}").ShowAsync();
+            var items = loadSingleLevelResult.Value;
             // items.FileItems now contains all children with their own placeholders
             foreach (var child in items.FileItems)
                 directory.FileItems.Add(child);
@@ -331,7 +367,7 @@ public partial class HomePageViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error loading children for directory {directory.Path}: {ex}");
+            Debug.WriteLine($"Error loading children for directory {directory.Path}: {ex.Message} - {ex.InnerException}");
             await MessageBoxManager.GetMessageBoxStandard("Error", $"Failed to load contents of {directory.Name}").ShowAsync();
         }
         finally
@@ -369,7 +405,7 @@ public partial class HomePageViewModel : ViewModelBase
         }
         catch(Exception ex)
         {
-            Debug.WriteLine($"Open file error : {ex}");
+            Debug.WriteLine($"Open file error : {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't open the file.");
             await errorMessageBox.ShowAsync();
         }
@@ -380,7 +416,7 @@ public partial class HomePageViewModel : ViewModelBase
         
     }
     [RelayCommand]
-    private async Task DeleteFileOrDirectoryFromServer()
+    private async Task DeleteFileOrDirectoryFromServer(CancellationToken token)
     {
         try
         {
@@ -388,39 +424,45 @@ public partial class HomePageViewModel : ViewModelBase
             var result = await connectedMessageBox.ShowAsync();
             if (result == ButtonResult.Yes)
             {
-                if (sftpClient.IsConnected)
+                if (_sessionConnection.IsConnected)
                 {
-                    SftpFileAttributes attrs = sftpClient.GetAttributes(ServerPath);
+                     var getAttributesResult = _serverOperationService.GetAttributes(_sessionConnection.CurrentSftpClient, ServerPath);
+                     if (!getAttributesResult.IsSuccess)
+                         await MessageBoxManager.GetMessageBoxStandard("Error.", $"Get attributes error: {getAttributesResult.Errors}").ShowAsync();
+
+                    SftpFileAttributes attrs = getAttributesResult.Value;
+                    if (attrs is null)
+                        return;
                     if(attrs.IsDirectory)
                     {
-                        await _serverOperationService.DeleteDirectoryRecursively(sftpClient, ServerPath);
+                        await _serverOperationService.DeleteDirectoryRecursively(_sessionConnection.CurrentSftpClient, ServerPath, token);
                         await MessageBoxManager.GetMessageBoxStandard("Success!", "Directory have just been removed.").ShowAsync();
                     }
                     else
                     {
-                        await _serverOperationService.DeleteFile(sftpClient, ServerPath);
+                        await _serverOperationService.DeleteFile(_sessionConnection.CurrentSftpClient, ServerPath, token);
                         await MessageBoxManager.GetMessageBoxStandard("Success!", "File have just been removed.").ShowAsync();
                     }
 
-                    await ResetServerList();
+                    await ResetServerList(token);
                 }
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Remove file error : {ex}");
+            Debug.WriteLine($"Remove file error : {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't delete the file.");
             await errorMessageBox.ShowAsync();
         }
     } 
     [RelayCommand]
-    private async Task UploadFileToServer()
+    private async Task UploadFileToServer(CancellationToken token)
     {
         try
         {
-            if (sftpClient.IsConnected)
+            if (_sessionConnection.IsConnected)
             {
-                sftpClient.ChangeDirectory(ServerPath);
+                _serverOperationService.ChangeDirectory(_sessionConnection.CurrentSftpClient, ServerPath);
                 if (LocalFiles == null || !LocalFiles.Any())
                 {
                     await MessageBoxManager.GetMessageBoxStandard("Info", "No local files selected for upload.").ShowAsync();
@@ -431,28 +473,28 @@ public partial class HomePageViewModel : ViewModelBase
                 {
                     using (var fileStream = new FileStream(file.Path, FileMode.Open))
                     {
-                        await _serverOperationService.UploadFile(sftpClient, fileStream, Path.GetFileName(file.Path));
+                        await _serverOperationService.UploadFile(_sessionConnection.CurrentSftpClient, fileStream, Path.GetFileName(file.Path), token);
                     }
                 }
 
                 await MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been uploaded to the server.").ShowAsync();;
 
-                await ResetServerList();
+                await ResetServerList(token);
             }
         }
         catch(Exception ex)
         {
-            Debug.WriteLine($"Upload file error : {ex}");
+            Debug.WriteLine($"Upload file error : {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't upload the file.");
             await errorMessageBox.ShowAsync();
         }
     } 
     [RelayCommand]
-    private async Task DownloadToLocal()
+    private async Task DownloadToLocal(CancellationToken token)
     {
         try
         {
-            if (sftpClient.IsConnected)
+            if (_sessionConnection.IsConnected)
             {
                 var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
 
@@ -471,7 +513,7 @@ public partial class HomePageViewModel : ViewModelBase
                 }
                 await using (var fileStream = File.Create($"{localPathForNewFile}/{Path.GetFileName(ServerPath)}"))
                 {
-                    await _serverOperationService.DownloadFile(sftpClient, ServerPath, fileStream);
+                    await _serverOperationService.DownloadFile(_sessionConnection.CurrentSftpClient, ServerPath, fileStream, token);
                 }
                
                 await MessageBoxManager.GetMessageBoxStandard("Success!", "Files have just been downloaded from the server.").ShowAsync();
@@ -482,13 +524,13 @@ public partial class HomePageViewModel : ViewModelBase
         }
         catch(Exception ex)
         {
-            Debug.WriteLine($"Download file error : {ex}");
+            Debug.WriteLine($"Download file error : {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't download the file.");
             await errorMessageBox.ShowAsync();
         }
     }
     [RelayCommand]
-    private async Task SaveConnection()
+    private async Task SaveConnection(CancellationToken token)
     {
         try
         {
@@ -499,53 +541,51 @@ public partial class HomePageViewModel : ViewModelBase
                 Port = int.Parse(Port)
             };
 
-            await _connectionsRepository.SaveConnection(connection);
+            await _connectionsRepository.SaveConnection(connection, token);
 
             var savedMessageBox = MessageBoxManager.GetMessageBoxStandard("Success.", "The connection string has been saved.");
             await savedMessageBox.ShowAsync();
         }
         catch(Exception ex)
         {
-            Debug.WriteLine($"SaveConnection error : {ex}");
+            Debug.WriteLine($"SaveConnection error : {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't save the connection.");
             await errorMessageBox.ShowAsync();
         }
     }
     [RelayCommand]
-    private async Task CreateNewDirectory()
+    private async Task CreateNewDirectory(CancellationToken token)
     {
         try
         {
-            HomePageView.instance.NewDirectoryForm.IsVisible = false;
+            CloseAllForms();
             if (string.IsNullOrEmpty(NewDirectoryName))
             {
                 await MessageBoxManager.GetMessageBoxStandard("Error.", "Name of the directory cannot be empty.").ShowAsync();
             }
             var path = $"{ServerPath}/{NewDirectoryName}";
-            bool fileExists = await Task.Run(() => sftpClient.Exists(path));
+            var isPathExistsResult = _serverOperationService.IsPathExists(_sessionConnection.CurrentSftpClient, path);
+            if(!isPathExistsResult.IsSuccess)
+                await MessageBoxManager.GetMessageBoxStandard("Error.", $"Is path exists error: {isPathExistsResult.Errors}").ShowAsync();
+            bool fileExists = isPathExistsResult.Value; 
             if (fileExists)
             {
                 await MessageBoxManager.GetMessageBoxStandard("Error", "A directory with this name already exists.").ShowAsync();
                 return; 
             }
-            await Task.Run(() => _serverOperationService.CreateDirectory(sftpClient, path));
+            await Task.Run(() => _serverOperationService.CreateDirectory(_sessionConnection.CurrentSftpClient, path, token));
 
-            await ResetServerList();
+            await ResetServerList(token);
         }
         catch(Exception ex)
         {
-            Debug.WriteLine($"HomePageViewModel CreateNewDirectory error: {ex}");
+            Debug.WriteLine($"HomePageViewModel CreateNewDirectory error: {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't create a new directory.");
             await errorMessageBox.ShowAsync();
         }
     }
     [RelayCommand]
-    private void CancelNewDirectory()
-    {
-        HomePageView.instance.NewDirectoryForm.IsVisible = false;
-    }
-    [RelayCommand]
-    private async Task CreateNewFile()
+    private async Task CreateNewFile(CancellationToken token)
     {
         try
         {
@@ -554,49 +594,50 @@ public partial class HomePageViewModel : ViewModelBase
             {
                 await MessageBoxManager.GetMessageBoxStandard("Error.", "Name of the file cannot be empty and It must contain '.' with format of the file.").ShowAsync();
             }
-            HomePageView.instance.NewFileForm.IsVisible = false;
+            CloseAllForms();
             var path = $"{ServerPath}/{NewFileName}";
 
-            bool fileExists = await Task.Run(() => sftpClient.Exists(path));
+            var isPathExistsResult = _serverOperationService.IsPathExists(_sessionConnection.CurrentSftpClient, path);
+            if(!isPathExistsResult.IsSuccess)
+                await MessageBoxManager.GetMessageBoxStandard("Error.", $"Is path exists error: {isPathExistsResult.Errors}").ShowAsync();
+            bool fileExists = isPathExistsResult.Value;
             if (fileExists)
             {
                 await MessageBoxManager.GetMessageBoxStandard("Error", "A file with this name already exists.").ShowAsync();
                 return; 
             }
-            await _serverOperationService.CreateFile(sftpClient, path);
+            await _serverOperationService.CreateFile(_sessionConnection.CurrentSftpClient, path, token);
 
-            await ResetServerList();
+            await ResetServerList(token);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"HomePageViewModel CreateNewDirectory error: {ex}");
+            Debug.WriteLine($"HomePageViewModel CreateNewDirectory error: {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't create a new directory.");
             await errorMessageBox.ShowAsync();
         }
     }
     [RelayCommand]
-    private void CancelForm()
-    {
-        HomePageView.instance.renameForm.IsVisible = false;
-        HomePageView.instance.newDirectoryForm.IsVisible = false;
-        HomePageView.instance.newFileForm.IsVisible = false;
-    }
-    [RelayCommand]
-    private async Task Rename()
+    private async Task Rename(CancellationToken token)
     {
         try
         {
             if (!string.IsNullOrEmpty(NewName))
             {
-                SftpFileAttributes attrs = await Task.Run( () => sftpClient.GetAttributes(ServerPath));
+                var getAttributes = _serverOperationService.GetAttributes(_sessionConnection.CurrentSftpClient, ServerPath);
+                if(!getAttributes.IsSuccess)
+                    await MessageBoxManager.GetMessageBoxStandard("Error.", $"Rename error: {getAttributes.Errors}").ShowAsync();
+                var attrs = getAttributes.Value;
+                if (attrs is null)
+                    return;
                 if (!attrs.IsDirectory && !NewName.Contains('.'))
                 {
                     await MessageBoxManager.GetMessageBoxStandard("Error", "File name must include an extension.")
                         .ShowAsync();
                     return;
                 }
-                await _serverOperationService.Rename(sftpClient, ServerPath, NewName);
-                await ResetServerList();
+                await _serverOperationService.Rename(_sessionConnection.CurrentSftpClient, ServerPath, NewName, token);
+                await ResetServerList(token);
             }
             else
             {
@@ -604,13 +645,53 @@ public partial class HomePageViewModel : ViewModelBase
             }
 
             NewName = string.Empty;
-            HomePageView.instance.renameForm.IsVisible = false;
+            CloseAllForms();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"HomePageViewModel Rename error: {ex}");
+            Debug.WriteLine($"HomePageViewModel Rename error: {ex.Message} - {ex.InnerException}");
             await MessageBoxManager.GetMessageBoxStandard("Error", "An unexpected error occurred while renaming.").ShowAsync();
         }
+    }
+    
+    private CancellationToken RefreshToken()
+    {
+        _ctsSource.Cancel();
+        _ctsSource.Dispose();
+        _ctsSource = new CancellationTokenSource();
+        return _ctsSource.Token;
+    }
+    
+    [RelayCommand]
+    private async Task DirectoryLeftClicked(Directory directory)
+    {
+        if (directory is null) return;
+        var token = RefreshToken();
+        SelectedServerItem = directory;
+        await LoadDirectoryChildrenOnDemand(directory);
+    }
+
+    [RelayCommand]
+    private void DirectoryRightClicked(Directory directory)
+    {
+        if (directory is null) return;
+        // Store the selected item so context menu actions know what to operate on
+        SelectedServerItem = directory;
+    }
+
+    [RelayCommand]
+    private void FileRightClicked(FileItem file)
+    {
+        if (file is null) return;
+        SelectedFileItem = file;
+    }
+    
+    [RelayCommand]
+    internal void CloseAllForms()
+    {
+        IsCreateDirectoryFormVisible = false;
+        IsCreateFileFormVisible = false;
+        IsRenameFormVisible = false;
     }
     
     private void SetBtnsVisibility()
@@ -618,34 +699,44 @@ public partial class HomePageViewModel : ViewModelBase
         ConnectBtnVisibility = !ConnectBtnVisibility;
         DisconnectBtnVisibility = !DisconnectBtnVisibility;
     }
-    internal void OpenRenameForm(Directory selectedDirectory)
+    internal void OpenRenameForm(object item)
     {
-        HomePageView.instance.renameForm.IsVisible = true;
-        if(!string.IsNullOrEmpty(selectedDirectory.Name))
-            NewName = selectedDirectory.Name;
-    }
-    internal void OpenRenameForm(FileItem selectedFile)
-    {
-        HomePageView.instance.renameForm.IsVisible = true;
-        if(!string.IsNullOrEmpty(selectedFile.Name))
-            NewName = selectedFile.Name;
+        IsRenameFormVisible = true;
+        IsCreateDirectoryFormVisible = false;
+        IsCreateFileFormVisible = false;
+
+        NewName = item switch
+        {
+            Directory dir => dir.Name,
+            FileItem file => file.Name,
+            _ => string.Empty
+        };
     }
     internal void OpenCreateFileForm()
     {
-        HomePageView.instance.NewFileForm.IsVisible = true;
+        IsCreateFileFormVisible = true;
+        IsCreateDirectoryFormVisible = false;
+        IsRenameFormVisible = false;
     }
     internal void OpenCreateDirectoryForm()
     {
-        HomePageView.instance.NewDirectoryForm.IsVisible = true;
+        IsCreateDirectoryFormVisible = true;
+        IsCreateFileFormVisible = false;
+        IsRenameFormVisible = false;
     }
-    private async Task ResetServerList()
+
+    private async Task ResetServerList(CancellationToken token)
     {
         ServerFiles.Clear();
         ServerPath = "/";
         ServerProgressBarValue = 50;
-        if (sftpClient.IsConnected)
+        if (_sessionConnection.IsConnected)
         {
-            var rootDir = await _serverOperationService.LoadSingleLevel(sftpClient, "/", "Root");
+            var loadSingleLevelResult = await _serverOperationService.LoadSingleLevel(_sessionConnection.CurrentSftpClient, "/", token, "Root");
+            if(!loadSingleLevelResult.IsSuccess)
+                await MessageBoxManager.GetMessageBoxStandard("Error.", $"Load single level error: {loadSingleLevelResult.Errors}").ShowAsync();
+            
+            var rootDir = loadSingleLevelResult.Value;
             ServerFiles.Add(rootDir);
             ServerProgressBarValue = 100;
         }

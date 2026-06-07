@@ -1,20 +1,19 @@
 using FTPClient.Models.Models;
+using FTPClient.Service.Abstractions;
 using Renci.SshNet;
 
 namespace FTPClient.Session;
 
-public class SessionConnection
+public class SessionConnection : ISessionConnection
 {
-    private static SessionConnection? _instance;
-    public static SessionConnection Instance => _instance ??= new SessionConnection();
     public Connection? CurrentConnection { get; set; }
-    public SftpClient? CurrentSftpClient { get; set; }
+    public IRemoteSession? CurrentSftpClient { get; set; }
     public bool IsConnected => CurrentSftpClient?.IsConnected ?? false;
 
     public void ClearSession()
     {
         CurrentConnection = null;
-        CurrentSftpClient?.Dispose();
+        CurrentSftpClient?.DisposeAsync();
         CurrentSftpClient = null;
     }
 }

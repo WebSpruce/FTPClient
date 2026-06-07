@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using FTPClient.Helper;
+using FTPClient.Messages;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Session;
@@ -16,13 +19,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace FTPClient.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase, IRecipient<NavigateToHomeMessage>
 {
     [ObservableProperty]
     private bool _isPaneOpen = true;
     
     [ObservableProperty]
-    private ViewModelBase _currentPage = new HomePageViewModel();
+    private ViewModelBase _currentPage = default!;
     
     [ObservableProperty] private ListItemTemplate? _selectedListItemMain;
     [ObservableProperty] private ListItemTemplate? _selectedListItemFooter;
@@ -45,12 +48,26 @@ public partial class MainWindowViewModel : ViewModelBase
     public static MainWindowViewModel instance;
     internal Dictionary<Type, ViewModelBase> pagesDictionary = new Dictionary<Type, ViewModelBase>();
     private readonly IServiceProvider _serviceProvider;
-    public MainWindowViewModel(IServiceProvider serviceProvider)
+    private readonly IHomePageViewModelFactory _homeFactory;
+    private readonly IMessenger _messenger;
+    private readonly ISessionConnection _sessionConnection;
+    private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
+    public MainWindowViewModel(
+        IServiceProvider serviceProvider, 
+        IMessenger messenger, 
+        ISessionConnection sessionConnection, 
+        IFilesAndDirectoriesService filesAndDirectoriesService,
+        IHomePageViewModelFactory homeFactory)
     {
-        instance = this;
-
         _serviceProvider = serviceProvider;
-        var _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
+        _messenger = messenger;
+        _sessionConnection = sessionConnection;
+        _filesAndDirectoriesService = filesAndDirectoriesService;
+        _homeFactory = homeFactory;
+        _messenger.RegisterAll(this);
+        
+        _currentPage = _homeFactory.Create();
+        
         var currentProfile = _filesAndDirectoriesService.GetCurrentProfile();
 
         Color profileColor = Color.FromRgb(36, 39, 42);
@@ -101,7 +118,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp)
             {
-                SessionConnection.Instance.ClearSession();
+                _sessionConnection.ClearSession();
                 desktopApp.Shutdown();
             }
             return;
@@ -136,8 +153,24 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         IsPaneOpen = !IsPaneOpen;
     }
-    
-    
+
+
+    public void Receive(NavigateToHomeMessage message)
+    {
+        var homeVm = _homeFactory.Create(message.Value);
+
+        // Update sidebar selection
+        SelectedListItemMain = MainMenuItems
+            .First(x => x.ModelType == typeof(HomePageViewModel));
+
+        // Clear footer selection to avoid dual highlight
+        _selectedListItemFooter = null;
+        OnPropertyChanged(nameof(SelectedListItemFooter));
+
+        CurrentPage = homeVm;
+        // Refresh page cache so next navigation uses the new instance
+        pagesDictionary[typeof(HomePageViewModel)] = homeVm;
+    }
 }
 
 public class ListItemTemplate

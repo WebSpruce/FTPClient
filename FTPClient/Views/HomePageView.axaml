@@ -3,13 +3,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="FTPClient.Views.HomePageView"
              xmlns:vm="using:FTPClient.ViewModels"
              xmlns:models="using:FTPClient.Models"
              xmlns:local="using:FTPClient.Helper"
+             x:Class="FTPClient.Views.HomePageView"
              x:DataType="vm:HomePageViewModel"
-             Background="#2c2f33"
-             x:Name="RootControl">
+             x:Name="RootControl"
+             Background="#2c2f33">
+	
+	<Design.DataContext>
+		<vm:HomePageViewModel />
+	</Design.DataContext>
 	
 	<UserControl.DataContext>
 		<vm:HomePageViewModel/>
@@ -133,7 +137,10 @@
                 <TextBox Text="{Binding ServerPath}" Watermark="⚫Path:" IsReadOnly="True"
                          Foreground="{StaticResource Accent}" Background="{StaticResource Main}" BorderBrush="Transparent" CornerRadius="5" Height="25" FontFamily="{StaticResource MadeInfinity}" FontWeight="Light" Margin="5"></TextBox>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="550" Padding="0" Margin="0">
-                    <TreeView ItemsSource="{Binding ServerFiles}" SelectedItem="{Binding SelectedServerItem}" AutoScrollToSelectedItem="True"
+                    <TreeView ItemsSource="{Binding ServerFiles}" 
+                              SelectedItem="{Binding SelectedServerItem}"
+                              x:Name="ServerTreeView"
+                              AutoScrollToSelectedItem="True"
                               Background="{StaticResource Second}" Margin="0" Padding="0">
 	                    <TreeView.Styles>
 		                    <!-- Custom treeviewitem style -->
@@ -153,8 +160,6 @@
 									                    Background="Transparent" FontSize="10"
 									                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
 									                    IsChecked="{TemplateBinding IsExpanded, Mode=TwoWay}"
-									                    Command="{Binding OnDemand, ElementName=RootControl}"
-									                    CommandParameter="{Binding DataContext, RelativeSource={RelativeSource TemplatedParent}}"
 									                    Content="{Binding IsChecked, RelativeSource={RelativeSource Self}, Converter={StaticResource BoolToGlyphConverter}}"
 									                    IsVisible="{Binding DataContext, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IsDirectoryToBoolConverter}}"
 									                    />
@@ -195,7 +200,8 @@
             </StackPanel>
         </Border>
 	    <!-- Right click controls -->
-		<Border x:Name="NewDirectoryForm" CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2" IsVisible="False"
+		<Border x:Name="NewDirectoryForm" IsVisible="{Binding IsCreateDirectoryFormVisible}" 
+		        CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2"
 				Background="{StaticResource Second}" BorderBrush="{StaticResource Main}" BorderThickness="3" Width="200" Height="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3">
 			<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
 				<TextBox Text="{Binding NewDirectoryName}" Watermark="📁Name:"
@@ -203,12 +209,13 @@
 				<StackPanel Orientation="Horizontal" Spacing="3">
 				    <Button Content="Create" Command="{Binding CreateNewDirectoryCommand}"
 				    	Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
-				    <Button Content="X" Command="{Binding CancelFormCommand}"
+				    <Button Content="X" Command="{Binding CloseAllFormsCommand}"
                                 Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="40" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
 				</StackPanel>
 			</StackPanel>
 		</Border>
-		<Border x:Name="NewFileForm" CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2" IsVisible="False"
+		<Border x:Name="NewFileForm" IsVisible="{Binding IsCreateFileFormVisible}"
+		        CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2"
 				Background="{StaticResource Second}" BorderBrush="{StaticResource Main}" BorderThickness="3" Width="200" Height="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3">
 			<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
 				<TextBox Text="{Binding NewFileName}" Watermark="📁Name:"
@@ -216,12 +223,13 @@
 				<StackPanel Orientation="Horizontal" Spacing="3">
 				    <Button Content="Create" Command="{Binding CreateNewFileCommand}"
 				    	Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
-				    <Button Content="X" Command="{Binding CancelFormCommand}"
+				    <Button Content="X" Command="{Binding CloseAllFormsCommand}"
                                 Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="40" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
 				</StackPanel>
 			</StackPanel>
 		</Border>
-		<Border x:Name="RenameForm" CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2" IsVisible="False"
+		<Border x:Name="RenameForm" IsVisible="{Binding IsRenameFormVisible}"
+		        CornerRadius="10" Grid.Row="2" Grid.Column="1" ZIndex="2"
 				Background="{StaticResource Second}" BorderBrush="{StaticResource Main}" BorderThickness="3" Width="200" Height="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3">
 			<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
 				<TextBox Text="{Binding NewName}" Watermark="📁New name:"
@@ -229,7 +237,7 @@
 				<StackPanel Orientation="Horizontal" Spacing="3">
 				    <Button Content="Rename" Command="{Binding RenameCommand}"
 				    	Foreground="{StaticResource Second}" Background="{StaticResource Accent2}" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Width="120" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
-				    <Button Content="X" Command="{Binding CancelFormCommand}"
+				    <Button Content="X" Command="{Binding CloseAllFormsCommand}"
                                 Foreground="{StaticResource Second}" Background="IndianRed" BorderBrush="Transparent" CornerRadius="10" HorizontalContentAlignment="Center" Width="40" Height="29" FontFamily="{StaticResource MadeInfinity}" FontWeight="Regular"></Button>
 				</StackPanel>
 			</StackPanel>

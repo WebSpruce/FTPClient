@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using FTPClient.Models;
 using FTPClient.Models.Models;
@@ -10,34 +11,13 @@ namespace FTPClient.Views;
 
 public partial class HomePageView : UserControl
 {
-    public static HomePageView instance;
-    public Border newDirectoryForm;
-    public Border newFileForm;
-    public Border renameForm;
     public HomePageView()
     {
         InitializeComponent();
-        newDirectoryForm = NewDirectoryForm;
-        newFileForm = NewFileForm;
-        renameForm = RenameForm;
         this.Loaded += OnLoaded;
-        instance = this;
-        DataContext = new HomePageViewModel();
+        ServerTreeView.AddHandler(TreeViewItem.ExpandedEvent, TreeViewItem_Expanded);
     }
-    public HomePageView(Connection connection)
-    {
-        InitializeComponent();
-        this.Loaded += OnLoaded;
-        instance = this;
-        DataContext = new HomePageViewModel(connection);
-    }
-
-    public void OnDemand(Directory dir)
-    {
-        var viewModel = this.DataContext as HomePageViewModel;
-        if (viewModel == null) return;
-        viewModel.LoadDirectoryChildrenOnDemand(dir);
-    }
+    
     private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (DataContext is HomePageViewModel viewModel)
@@ -47,76 +27,97 @@ public partial class HomePageView : UserControl
     }
     private async void PasteKeyDownCommand(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.V && e.KeyModifiers == KeyModifiers.Control)
-        {
-            var textBox = e.Source as TextBox;
-            if (textBox != null)
-            {
-                var clipboard = new Window().Clipboard;
-                textBox.Text = await clipboard.GetTextAsync();
-            }
-        }
+        if (e.Key != Key.V || e.KeyModifiers != KeyModifiers.Control) return;
+
+        var textBox = e.Source as TextBox;
+        if (textBox is null) return;
+        
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clipboard is null) return;
+
+        textBox.Text = await clipboard.TryGetTextAsync();
     }
 
     private async void Directory_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         var mouseButton = e.GetCurrentPoint(this).Properties.PointerUpdateKind;
-        var selectedDirectory = (sender as StackPanel)?.DataContext as Directory;
-    
-        if (selectedDirectory == null) return;
-        
-        var viewModel = this.DataContext as HomePageViewModel;
-        if (viewModel == null) return;
-        Debug.WriteLine($"mouse clicked: {mouseButton}");
+
+        if (sender is not StackPanel panel) return;
+        if (panel.DataContext is not Directory selectedDirectory) return;
+        if (DataContext is not HomePageViewModel viewModel) return;
+
         if (mouseButton == PointerUpdateKind.RightButtonPressed)
         {
-            var contextMenu = new ContextMenu();
-            var createDirectory = new MenuItem { Header = "Create Directory" };
-            var createFile = new MenuItem { Header = "Create File" };
-            var Rename = new MenuItem { Header = "Rename" };
-            var Delete = new MenuItem { Header = "Delete" };
+            viewModel.SelectedServerItem = selectedDirectory;
 
-            contextMenu.Items.Add(createDirectory);
-            contextMenu.Items.Add(createFile);
-            contextMenu.Items.Add(Rename);
-            contextMenu.Open((Control)sender);
-        
-            createDirectory.Click += (sender, e) =>
-            {
-                HomePageViewModel.instance.OpenCreateDirectoryForm();
-            };
-            createFile.Click += (sender, e) =>
-            {
-                HomePageViewModel.instance.OpenCreateFileForm();
-            };
-            Rename.Click += (sender, e) =>
-            {
-                HomePageViewModel.instance.OpenRenameForm(selectedDirectory);
-            };
+            var contextMenu = BuildDirectoryContextMenu(viewModel, selectedDirectory);
+            contextMenu.Open(panel);
         }
         else if (mouseButton == PointerUpdateKind.LeftButtonPressed)
         {
-            Debug.WriteLine($"mouse: left clicked");
             viewModel.SelectedServerItem = selectedDirectory;
-            await viewModel.LoadDirectoryChildrenOnDemand(selectedDirectory);
         }
     }
 
     private void File_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         var mouseButton = e.GetCurrentPoint(this).Properties.PointerUpdateKind;
-        var selectedFile = (sender as StackPanel).DataContext as FileItem;
+
+        if (sender is not StackPanel panel) return;
+        if (panel.DataContext is not FileItem selectedFile) return;
+        if (DataContext is not HomePageViewModel viewModel) return; 
+
         if (mouseButton == PointerUpdateKind.RightButtonPressed)
         {
-            var contextMenu = new ContextMenu();
-            var Rename = new MenuItem { Header = "Rename" };
+            viewModel.SelectedFileItem = selectedFile;
 
-            contextMenu.Items.Add(Rename);
-            contextMenu.Open((Control)sender);
-            Rename.Click += (sender, e) =>
-            {
-                HomePageViewModel.instance.OpenRenameForm(selectedFile);
-            };
+            var contextMenu = BuildFileContextMenu(viewModel, selectedFile);
+            contextMenu.Open(panel);
         }
+    }
+    
+    private static ContextMenu BuildDirectoryContextMenu(HomePageViewModel viewModel, Directory directory)
+    {
+        var createDirectory = new MenuItem { Header = "Create Directory" };
+        var createFile = new MenuItem { Header = "Create File" };
+        var rename = new MenuItem { Header = "Rename" };
+        var delete = new MenuItem { Header = "Delete" };
+
+        createDirectory.Click += (_, _) => viewModel.OpenCreateDirectoryForm();
+        createFile.Click += (_, _) => viewModel.OpenCreateFileForm();
+        rename.Click += (_, _) => viewModel.OpenRenameForm(directory);
+        delete.Click += (_, _) => viewModel.DeleteFileOrDirectoryFromServerCommand.Execute(directory);
+
+        var contextMenu = new ContextMenu();
+        contextMenu.Items.Add(createDirectory);
+        contextMenu.Items.Add(createFile);
+        contextMenu.Items.Add(rename);
+        contextMenu.Items.Add(delete);
+
+        return contextMenu;
+    }
+
+    private static ContextMenu BuildFileContextMenu(HomePageViewModel viewModel, FileItem file)
+    {
+        var rename = new MenuItem { Header = "Rename" };
+        var delete = new MenuItem { Header = "Delete" };
+
+        rename.Click += (_, _) => viewModel.OpenRenameForm(file);
+        delete.Click += (_, _) => viewModel.DeleteFileOrDirectoryFromServerCommand.Execute(file);
+
+        var contextMenu = new ContextMenu();
+        contextMenu.Items.Add(rename);
+        contextMenu.Items.Add(delete);
+
+        return contextMenu;
+    }
+    
+    private async void TreeViewItem_Expanded(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is not TreeViewItem treeViewItem) return;
+        if (treeViewItem.DataContext is not Directory directory) return;
+        if (DataContext is not HomePageViewModel viewModel) return;
+
+        await viewModel.LoadDirectoryChildrenOnDemandCommand.ExecuteAsync(directory);
     }
 }
