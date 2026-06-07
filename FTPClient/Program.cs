@@ -1,7 +1,7 @@
 ﻿using Avalonia;
-using Avalonia.ReactiveUI;
 using System;
 using HotAvalonia;
+using ReactiveUI.Avalonia;
 
 namespace FTPClient;
 
@@ -21,5 +21,8 @@ sealed class Program
             .WithInterFont()
             .UseHotReload()
             .LogToTrace()
-            .UseReactiveUI();
+            .UseReactiveUI(rxui =>
+            {
+                
+            });
 }
