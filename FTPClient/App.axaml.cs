@@ -52,28 +52,37 @@ public partial class App : Application
         IFilesAndDirectoriesService _filesAndDirectoriesService = new FilesAndDirectoriesService();
         string LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-        List<Profile> allProfiles = _filesAndDirectoriesService.GetUserSettings();
+        var getUserSettingsResult = _filesAndDirectoriesService.GetUserSettings();
+        if (!getUserSettingsResult.IsSuccess)
+            SetDefaultValues(_filesAndDirectoriesService, LocalPath);
+        
+        var allProfiles = getUserSettingsResult.Value;
         if (!allProfiles.Any())
-        {
-            Profile profile = new Profile()
-            {
-                Name = "Default",
-                ProfileSettings = new ProfileSettings()
-                {
-                    LocalPath = LocalPath,
-                    ProfileColor = new JsonColor
-                    {
-                        R = 36,
-                        G = 39,
-                        B = 42
-                    },
-                }
-            };
-            _filesAndDirectoriesService.SaveUserConfigFile(profile);
-            _filesAndDirectoriesService.SaveCurrentProfile();
-        }
+            SetDefaultValues(_filesAndDirectoriesService, LocalPath);
+        
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void SetDefaultValues(IFilesAndDirectoriesService filesAndDirectoriesService,
+        string localPath)
+    {
+        Profile profile = new Profile()
+        {
+            Name = "Default",
+            ProfileSettings = new ProfileSettings()
+            {
+                LocalPath = localPath,
+                ProfileColor = new JsonColor
+                {
+                    R = 36,
+                    G = 39,
+                    B = 42
+                },
+            }
+        };
+        filesAndDirectoriesService.SaveUserConfigFile(profile);
+        filesAndDirectoriesService.SaveCurrentProfile();
     }
     private void ConfigureServices()
     {

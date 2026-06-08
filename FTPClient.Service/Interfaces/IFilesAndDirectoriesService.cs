@@ -1,17 +1,17 @@
 ﻿using FTPClient.Models;
-using Renci.SshNet;
+using FTPClient.Models.Models;
 
 namespace FTPClient.Service.Interfaces
 {
     public interface IFilesAndDirectoriesService
     {
-        void SaveUserConfigFile(Profile profile);
-        Profile GetUserSettings(string profileName);
-        List<Profile> GetUserSettings();
-        void SaveCurrentProfile(string profileName);
-        void SaveCurrentProfile();
-        string GetCurrentProfile();
-        void AddNewProfile(string newProfileName);
-        void DeleteProfile(string profileName);
+        Result SaveUserConfigFile(Profile profile);
+        Result<Profile> GetUserSettings(string profileName);
+        Result<List<Profile>> GetUserSettings();
+        Result SaveCurrentProfile(string profileName);
+        Result SaveCurrentProfile();
+        Result<string> GetCurrentProfile();
+        Result AddNewProfile(string newProfileName);
+        Result DeleteProfile(string profileName);
     }
 }

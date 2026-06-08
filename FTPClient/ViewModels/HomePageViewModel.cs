@@ -14,7 +14,9 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using FTPClient.Database.Interfaces;
+using FTPClient.Messages;
 using FTPClient.Models;
 using FTPClient.Models.Models;
 using FTPClient.Service.Interfaces;
@@ -28,7 +30,8 @@ using Path = System.IO.Path;
 
 namespace FTPClient.ViewModels;
 
-public partial class HomePageViewModel : ViewModelBase
+public partial class HomePageViewModel : ViewModelBase,
+    IRecipient<LocalPathChangedMessage>
 {
     
     private string _host = string.Empty;
@@ -229,8 +232,22 @@ public partial class HomePageViewModel : ViewModelBase
 
     internal async Task OnLoad()
     {
-        var profileName = _filesAndDirectoriesService.GetCurrentProfile();
-        var currentProfile = _filesAndDirectoriesService.GetUserSettings(profileName);
+        var getCurrentProfileResult = _filesAndDirectoriesService.GetCurrentProfile();
+        if (!getCurrentProfileResult.IsSuccess)
+        {
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Get current profile error: {getCurrentProfileResult.Errors}.").ShowAsync();
+            return;
+        }
+
+        var profileName = getCurrentProfileResult.Value;
+        var getUserSettingsResult = _filesAndDirectoriesService.GetUserSettings(profileName);
+        if (!getUserSettingsResult.IsSuccess)
+        {
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Get user settings error: {getUserSettingsResult.Errors}.").ShowAsync();
+            return;
+        }
+
+        var currentProfile = getUserSettingsResult.Value;
         LocalPath = currentProfile.ProfileSettings.LocalPath ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         if (_sessionConnection.CurrentConnection != null)
         {
@@ -250,6 +267,7 @@ public partial class HomePageViewModel : ViewModelBase
                 {
                     var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", $"Loading data error: {rootDirResult.Errors}.");
                     await errorMessageBox.ShowAsync();
+                    return;
                 }
                 ServerFiles.Add(rootDirResult.Value);
             }
@@ -382,10 +400,23 @@ public partial class HomePageViewModel : ViewModelBase
         try
         {
             var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
+            
+            var getCurrentProfileResult = _filesAndDirectoriesService.GetCurrentProfile();
+            if (!getCurrentProfileResult.IsSuccess)
+            {
+                await MessageBoxManager.GetMessageBoxStandard("Error", $"Get current profile error: {getCurrentProfileResult.Errors}.").ShowAsync();
+                return;
+            }
 
-            var currentProfileName = _filesAndDirectoriesService.GetCurrentProfile();
-            var currentProfile = _filesAndDirectoriesService.GetUserSettings(currentProfileName);
+            var profileName = getCurrentProfileResult.Value;
+            var getUserSettingsResult = _filesAndDirectoriesService.GetUserSettings(profileName);
+            if (!getUserSettingsResult.IsSuccess)
+            {
+                await MessageBoxManager.GetMessageBoxStandard("Error", $"Get user settings error: {getUserSettingsResult.Errors}.").ShowAsync();
+                return;
+            }
 
+            var currentProfile = getUserSettingsResult.Value;
             var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 Title = "Select file",
@@ -740,5 +771,10 @@ public partial class HomePageViewModel : ViewModelBase
             ServerFiles.Add(rootDir);
             ServerProgressBarValue = 100;
         }
+    }
+
+    public void Receive(LocalPathChangedMessage message)
+    {
+        LocalPath = message.Value;
     }
 }
