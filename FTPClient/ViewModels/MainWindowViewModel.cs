@@ -1,33 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using FTPClient.Helper;
+using FTPClient.Messages;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Session;
-using FTPClient.Views;
 using Microsoft.Extensions.DependencyInjection;
+using MsBox.Avalonia;
 
 namespace FTPClient.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase, 
+    IRecipient<NavigateToHomeMessage>,
+    IRecipient<ProfileColorChangedMessage>,
+    IRecipient<ProfileNameChangedMessage>
 {
     [ObservableProperty]
     private bool _isPaneOpen = true;
     
     [ObservableProperty]
-    private ViewModelBase _currentPage = new HomePageViewModel();
+    private ViewModelBase _currentPage = default!;
     
     [ObservableProperty] private ListItemTemplate? _selectedListItemMain;
     [ObservableProperty] private ListItemTemplate? _selectedListItemFooter;
-    [ObservableProperty] private SolidColorBrush? _profileIconForeground = new SolidColorBrush(Color.FromRgb(153,170,181));
-    [ObservableProperty] private SolidColorBrush? _profileIconBackground = new SolidColorBrush(Colors.Transparent);
+    [ObservableProperty] private IBrush? _profileIconForeground = new ImmutableSolidColorBrush(Color.FromRgb(153,170,181));
+    [ObservableProperty] private IBrush? _profileIconBackground = new ImmutableSolidColorBrush(Colors.Transparent);
 
     [ObservableProperty] 
     private string? _currentProfileIcon;
@@ -42,25 +50,60 @@ public partial class MainWindowViewModel : ViewModelBase
         new ListItemTemplate(typeof(SettingsPageViewModel), "SettingsRegular"),
         new ListItemTemplate(typeof(ExitPageViewModel), "ExitRegular"),
     };
-    public static MainWindowViewModel instance;
-    internal Dictionary<Type, ViewModelBase> pagesDictionary = new Dictionary<Type, ViewModelBase>();
+    private readonly Dictionary<Type, ViewModelBase> _pageCache = new();
     private readonly IServiceProvider _serviceProvider;
-    public MainWindowViewModel(IServiceProvider serviceProvider)
+    private readonly IHomePageViewModelFactory _homeFactory;
+    private readonly IMessenger _messenger;
+    private readonly ISessionConnection _sessionConnection;
+    private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
+    public MainWindowViewModel(
+        IServiceProvider serviceProvider, 
+        IMessenger messenger, 
+        ISessionConnection sessionConnection, 
+        IFilesAndDirectoriesService filesAndDirectoriesService,
+        IHomePageViewModelFactory homeFactory)
     {
-        instance = this;
-
         _serviceProvider = serviceProvider;
-        var _filesAndDirectoriesService = ((App)Application.Current).Services.GetRequiredService<IFilesAndDirectoriesService>();
-        var currentProfile = _filesAndDirectoriesService.GetCurrentProfile();
+        _messenger = messenger;
+        _sessionConnection = sessionConnection;
+        _filesAndDirectoriesService = filesAndDirectoriesService;
+        _homeFactory = homeFactory;
+        _messenger.RegisterAll(this);
+        
+        _currentPage = _homeFactory.Create();
+    }
+    
+    internal async Task OnLoad()
+    {
+        await Initialize();
+    }
 
+    private async Task Initialize()
+    {
+        var getCurrentProfileResult = _filesAndDirectoriesService.GetCurrentProfile();
+        if (!getCurrentProfileResult.IsSuccess)
+        {
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Get current user profile error: {getCurrentProfileResult.Errors}.").ShowAsync();
+            return;
+        }
+
+        var currentProfile = getCurrentProfileResult.Value;
+        
         Color profileColor = Color.FromRgb(36, 39, 42);
         JsonColor profileJsonColor = new JsonColor() { R =  profileColor.R, G = profileColor.G, B = profileColor.B };
         CurrentProfileIcon = "D";
         if (!string.IsNullOrEmpty(currentProfile))
         {
             CurrentProfileIcon = currentProfile.Substring(0,1).ToUpper();
-            var userSettings = _filesAndDirectoriesService.GetUserSettings(currentProfile);
+            var getUserSettingsResult = _filesAndDirectoriesService.GetUserSettings(currentProfile);
+            if (!getUserSettingsResult.IsSuccess)
+            {
+                await MessageBoxManager.GetMessageBoxStandard("Error", $"Get user settings error: {getUserSettingsResult.Errors}.").ShowAsync();
+                return;
+            }
 
+            var userSettings = getUserSettingsResult.Value;
+                
             if(userSettings.ProfileSettings == null)
             {
                 userSettings.ProfileSettings = new ProfileSettings() { ProfileColor = profileJsonColor, LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) };
@@ -73,8 +116,8 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         Color foregroundColor = DarkOrLightColor.IsLightColor(profileColor) ? Color.FromRgb(36, 39, 42) : Color.FromRgb(107, 139, 161);
-        ProfileIconForeground = new SolidColorBrush(foregroundColor);
-        ProfileIconBackground = new SolidColorBrush(profileColor);
+        ProfileIconForeground = new ImmutableSolidColorBrush(foregroundColor);
+        ProfileIconBackground = new ImmutableSolidColorBrush(profileColor);
     }
 
     partial void OnSelectedListItemMainChanged(ListItemTemplate? item)
@@ -101,34 +144,13 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp)
             {
-                SessionConnection.Instance.ClearSession();
+                _sessionConnection.ClearSession();
                 desktopApp.Shutdown();
             }
             return;
         }
 
-        if (!pagesDictionary.ContainsKey(CurrentPage.GetType()))
-        {
-            var page = (ViewModelBase)CurrentPage;
-            pagesDictionary.Add(CurrentPage.GetType(), page);
-        }
-
-        var modelType = item.ModelType;
-        if (pagesDictionary.ContainsKey(modelType))
-        {
-            CurrentPage = pagesDictionary[modelType];
-        }
-        else
-        {
-            var instance = _serviceProvider.GetRequiredService(modelType);
-            if (instance is null)
-            {
-                return;
-            }
-
-            CurrentPage = (ViewModelBase)instance;
-            pagesDictionary.Add(modelType, CurrentPage);
-        }
+        CurrentPage = GetOrCreatePage(item.ModelType);
     }
     
     [RelayCommand]
@@ -136,8 +158,56 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         IsPaneOpen = !IsPaneOpen;
     }
-    
-    
+
+    private ViewModelBase GetOrCreatePage(Type pageType)
+    {
+        if (_pageCache.TryGetValue(pageType, out var existingPage))
+            return existingPage;
+
+        ViewModelBase page = pageType == typeof(HomePageViewModel)
+            ? _homeFactory.Create()
+            : (ViewModelBase)_serviceProvider.GetRequiredService(pageType);
+
+        _pageCache[pageType] = page;
+        return page;
+    }
+
+    public void Receive(NavigateToHomeMessage message)
+    {
+        var homeVm = _homeFactory.Create(message.Value);
+
+        // Update sidebar selection
+        SelectedListItemMain = MainMenuItems
+            .First(x => x.ModelType == typeof(HomePageViewModel));
+
+        // Clear footer selection to avoid dual highlight
+        _selectedListItemFooter = null;
+        OnPropertyChanged(nameof(SelectedListItemFooter));
+
+        CurrentPage = homeVm;
+        // Refresh page cache so next navigation uses the new instance
+        _pageCache[typeof(HomePageViewModel)] = homeVm;
+    }
+
+    public void Receive(ProfileColorChangedMessage message)
+    {
+        var newColor = message.Value;
+
+        Color foregroundColor = DarkOrLightColor.IsLightColor(newColor)
+            ? Color.FromRgb(36, 39, 42)
+            : Color.FromRgb(107, 139, 161);
+
+        ProfileIconForeground = new ImmutableSolidColorBrush(foregroundColor);
+        ProfileIconBackground = new ImmutableSolidColorBrush(newColor);
+    }
+
+    public void Receive(ProfileNameChangedMessage message)
+    {
+        var profileName = message.Value;
+        CurrentProfileIcon = string.IsNullOrWhiteSpace(profileName)
+            ? "D"
+            : profileName.Substring(0, 1).ToUpper();
+    }
 }
 
 public class ListItemTemplate

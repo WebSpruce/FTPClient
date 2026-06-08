@@ -1,8 +1,8 @@
-﻿using Avalonia.Media;
-using FTPClient.Models;
+﻿using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using System.Diagnostics;
 using System.Text.Json;
+using FTPClient.Models.Models;
 
 namespace FTPClient.Service.Services
 {
@@ -10,11 +10,14 @@ namespace FTPClient.Service.Services
     {
         private static string settingsFilePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/userSettings.json";
         private static string profileFilePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/profile.json";
-        public void SaveUserConfigFile(Profile profile)
+        public Result SaveUserConfigFile(Profile profile)
         {
             try
             {
-                var allProfiles = GetUserSettings();
+                var allProfilesResult = GetUserSettings();
+                if (!allProfilesResult.IsSuccess)
+                    return Result.Failure([$"Get user settings error: {allProfilesResult.Errors}"]);
+                var allProfiles = allProfilesResult.Value;
                 var indexOfMyProfile = -1;
                 foreach (var p in allProfiles)
                 {
@@ -59,14 +62,17 @@ namespace FTPClient.Service.Services
                         writer.Write(jsonFile);
                     }
                 }
+
+                return Result.Success();
             }
             catch(Exception ex)
             {
                 Debug.WriteLine($"FilesAndDirectoriesService SaveUserConfigFile error: {ex}");
+                return Result.Failure([$"SaveUserConfigFile error: {ex.Message} - {ex.InnerException}"]);
             }
             
         }
-        public Profile GetUserSettings(string profileName)
+        public Result<Profile> GetUserSettings(string profileName)
         {
             try
             {
@@ -81,7 +87,7 @@ namespace FTPClient.Service.Services
                 }
                 if (string.IsNullOrWhiteSpace(userSettings))
                 {
-                    return new Profile();
+                    return Result.Failure<Profile>(["user settings are empty"]);
                 }
                 else
                 {
@@ -90,19 +96,19 @@ namespace FTPClient.Service.Services
                     {
                         if (profile.Name == profileName)
                         {
-                            return profile ?? new Profile();
+                            return profile != null ? Result.Success(profile) : Result.Failure<Profile>(["Found empty settings object"]);
                         }
                     }
-                    return new Profile();
+                    return Result.Failure<Profile>(["No user settings found"]);
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"FilesAndDirectoriesService GetUserSettings error: {ex}");
-                return new Profile();
+                return Result.Failure<Profile>([$"GetUserSettings error: {ex.Message} - {ex.InnerException}"]);
             }
         }
-        public List<Profile> GetUserSettings()
+        public Result<List<Profile>> GetUserSettings()
         {
             try
             {
@@ -122,41 +128,49 @@ namespace FTPClient.Service.Services
                     };
                     SaveUserConfigFile(newProfile);
                 }
+                
                 var userSettings = File.ReadAllText(settingsFilePath);
                 var settings = JsonSerializer.Deserialize<List<Profile>>(userSettings);
-                return settings ?? new List<Profile>();
+                if (settings == null || !settings.Any())
+                    return Result.Failure<List<Profile>>(["Settings are not found"]);
+                
+                return Result.Success(settings);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"FilesAndDirectoriesService GetUserSettings error: {ex}");
-                return new List<Profile>();
+                return Result.Failure<List<Profile>>([$"GetUserSettings error: {ex.Message} - {ex.InnerException}"]);
             }
         }
-        public void SaveCurrentProfile(string profileName)
+        public Result SaveCurrentProfile(string profileName)
         {
             try
             {
                 string jsonFile = JsonSerializer.Serialize(profileName);
                 File.WriteAllText(profileFilePath, jsonFile);
+                return Result.Success();
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"FilesAndDirectoriesService SaveCurrentProfileFile error: {ex}");
+                Debug.WriteLine($"FilesAndDirectoriesService SaveCurrentProfile error: {ex}");
+                return Result.Failure<List<Profile>>([$"SaveCurrentProfile error: {ex.Message} - {ex.InnerException}"]);
             }
         }
-        public void SaveCurrentProfile()
+        public Result SaveCurrentProfile()
         {
             try
             {
                 string jsonFile = JsonSerializer.Serialize("Default");
                 File.WriteAllText(profileFilePath, jsonFile);
+                return Result.Success();
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"FilesAndDirectoriesService SaveCurrentProfileFile error: {ex}");
+                Debug.WriteLine($"FilesAndDirectoriesService SaveCurrentProfile error: {ex}");
+                return Result.Failure<List<Profile>>([$"SaveCurrentProfile error: {ex.Message} - {ex.InnerException}"]);
             }
         }
-        public string GetCurrentProfile()
+        public Result<string> GetCurrentProfile()
         {
             try
             {
@@ -166,19 +180,26 @@ namespace FTPClient.Service.Services
                 }
                 var currentProfileJson = File.ReadAllText(profileFilePath);
                 var currentProfile = JsonSerializer.Deserialize<string>(currentProfileJson);
-                return currentProfile ?? string.Empty;
+                if (string.IsNullOrEmpty(currentProfile))
+                    return Result.Failure<string>(["Current profile is empty"]);
+                return Result.Success(currentProfile);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"FilesAndDirectoriesService GetCurrentProfile error: {ex}");
-                return string.Empty;
+                return Result.Failure<string>([$"GetCurrentProfile error: {ex.Message} - {ex.InnerException}"]);
             }
         }
-        public void AddNewProfile(string newProfileName)
+        public Result AddNewProfile(string newProfileName)
         {
             try
             {
-                var profiles = GetUserSettings();
+                var profilesResult = GetUserSettings();
+                if (!profilesResult.IsSuccess)
+                    return Result.Failure([$"GetUserSettings error: {profilesResult.Errors}"]);
+                
+                var profiles = profilesResult.Value;
+                
                 bool isAlreadyExists = false;
                 foreach(var profile in profiles)
                 {
@@ -187,6 +208,7 @@ namespace FTPClient.Service.Services
                         isAlreadyExists = true;
                     }
                 }
+
                 if (!isAlreadyExists)
                 {
                     profiles.Add(new Profile()
@@ -199,28 +221,38 @@ namespace FTPClient.Service.Services
                     });
                     string jsonFile = JsonSerializer.Serialize(profiles);
                     File.WriteAllText(settingsFilePath, jsonFile);
+                    return Result.Success();
                 }
+                return Result.Failure(["The profile already exists"]);
             }
             catch(Exception ex)
             {
                 Debug.WriteLine($"FilesAndDirectoriesService AddNewProfile error: {ex}");
+                return Result.Failure([$"AddNewProfile error: {ex.Message} - {ex.InnerException}"]);
             }
         } 
-        public void DeleteProfile(string profileName)
+        public Result DeleteProfile(string profileName)
         {
             try
             {
-                var profiles = GetUserSettings();
-                var profile = profiles.Where(p => p.Name == profileName).FirstOrDefault();
+                var profilesResult = GetUserSettings();
+                if (!profilesResult.IsSuccess)
+                    return Result.Failure([$"GetUserSettings error: {profilesResult.Errors}"]);
+                
+                var profiles = profilesResult.Value;
+                
+                var profile = profiles.FirstOrDefault(p => p.Name == profileName);
                 int indexOfProfile = profiles.IndexOf(profile);
                 profiles.RemoveAt(indexOfProfile);
 
                 string jsonFile = JsonSerializer.Serialize(profiles);
                 File.WriteAllText(settingsFilePath, jsonFile);
+                return Result.Success();
             }
             catch(Exception ex)
             {
-                Debug.WriteLine($"FilesAndDirectoriesService AddNewProfile error: {ex}");
+                Debug.WriteLine($"FilesAndDirectoriesService DeleteProfile error: {ex}");
+                return Result.Failure<List<Profile>>([$"DeleteProfile error: {ex.Message} - {ex.InnerException}"]);
             }
         }
     }

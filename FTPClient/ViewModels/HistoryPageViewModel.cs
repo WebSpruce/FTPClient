@@ -1,63 +1,64 @@
-using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FTPClient.Database.Interfaces;
-using FTPClient.Database.Repository;
 using FTPClient.Models.Models;
-using Microsoft.Extensions.DependencyInjection;
 using MsBox.Avalonia;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
-using FTPClient.Session;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using FTPClient.Messages;
 
 namespace FTPClient.ViewModels;
 
 public partial class HistoryPageViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private ViewModelBase _currentPage = new HomePageViewModel();
-    [ObservableProperty]
     private List<Connection> _connections = new();
-    private IConnectionsRepository _connectionRepository;
-    public static HistoryPageViewModel instance;
-    public HistoryPageViewModel(IConnectionsRepository connectionsRepository)
+    private readonly IConnectionsRepository _connectionRepository;
+    private readonly IMessenger _messenger;
+    private readonly CancellationTokenSource _ctsSource;
+    private readonly CancellationToken _cts;
+    public HistoryPageViewModel(IConnectionsRepository connectionsRepository, IMessenger messenger)
     {
-        instance = this;
         _connectionRepository = connectionsRepository;
-        Task.Run(async () => Connections = await _connectionRepository.GetAllConnections());
+        _messenger = messenger;
+        _ctsSource = new CancellationTokenSource();
+        _cts = _ctsSource.Token;
     } 
     internal async Task OnLoad()
     {
-        Connections = await _connectionRepository.GetAllConnections();
+        Connections = await _connectionRepository.GetAllConnections(_cts);
     }
-    public async Task Connect(Connection connection)
+    [RelayCommand]
+    private async Task Connect(Connection connection)
     {
         try
         {
-            MainWindowViewModel.instance.SelectedListItemMain = new ListItemTemplate(typeof(HomePageViewModel), "HomeRegular");
-            MainWindowViewModel.instance.CurrentPage = new HomePageViewModel(connection);
-            SessionConnection.Instance.ClearSession();
+            _messenger.Send(new NavigateToHomeMessage(connection));
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"HistoryPageViewModel connect error : {ex}");
+            Debug.WriteLine($"HistoryPageViewModel connect error : {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't add the connection string.");
             await errorMessageBox.ShowAsync();
         }
     } 
-    public async Task Remove(Connection connection)
+    [RelayCommand]
+    public async Task Remove(Connection connection, CancellationToken token)
     {
         try
         {
-            await _connectionRepository.DeleteConnection(connection);
+            await _connectionRepository.DeleteConnection(connection, token);
             var savedMessageBox = MessageBoxManager.GetMessageBoxStandard("Success.", "The connection string has been deleted.");
             await savedMessageBox.ShowAsync();
-            Connections = _connectionRepository.GetAllConnections().Result;
+            Connections = _connectionRepository.GetAllConnections(token).Result;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"HistoryPageViewModel Remove error : {ex}");
+            Debug.WriteLine($"HistoryPageViewModel Remove error : {ex.Message} - {ex.InnerException}");
             var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error.", "Couldn't remove the connection string.");
             await errorMessageBox.ShowAsync();
         }

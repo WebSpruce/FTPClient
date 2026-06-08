@@ -14,33 +14,37 @@ namespace FTPClient.Database.Repository
         {
             _context = context;
         }
-        public async Task<List<Connection>> GetAllConnections()
+        public async Task<List<Connection>> GetAllConnections(CancellationToken token)
         {
-            await using var context = await _context.CreateDbContextAsync();
-            return await context.Connections.ToListAsync();
+            await using var context = await _context.CreateDbContextAsync(token);
+            return await context.Connections.ToListAsync(token);
         }
-        public async Task SaveConnection(Connection connection)
+        public async Task SaveConnection(Connection connection, CancellationToken token)
         {
             try
             {
-                await using var context = await _context.CreateDbContextAsync();
-                await context.Connections.AddAsync(connection);
-                await context.SaveChangesAsync();
+                if (token.IsCancellationRequested)
+                    return;
+                await using var context = await _context.CreateDbContextAsync(token);
+                await context.Connections.AddAsync(connection, token);
+                await context.SaveChangesAsync(token);
             }catch(Exception ex)
             {
                 Debug.WriteLine($"ConnectionRepository SaveConnection error: {ex}");
             }
         }
-        public async Task DeleteConnection(Connection connection)
+        public async Task DeleteConnection(Connection connection, CancellationToken token)
         {
             try
             {
-                await using var context = await _context.CreateDbContextAsync();
-                var item = context.Connections.FirstOrDefault(c=>c.Id == connection.Id);
+                if (token.IsCancellationRequested)
+                    return;
+                await using var context = await _context.CreateDbContextAsync(token);
+                var item = await context.Connections.FirstOrDefaultAsync(c=>c.Id == connection.Id, token);
                 if (item is not null)
                 {
                     context.Connections.Remove(item);
-                    await context.SaveChangesAsync();
+                    await context.SaveChangesAsync(token);
                 }
             }catch(Exception ex)
             {

@@ -6,12 +6,14 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using CommunityToolkit.Mvvm.Messaging;
 using FTPClient.Database.Data;
 using FTPClient.Database.Interfaces;
 using FTPClient.Database.Repository;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Service.Services;
+using FTPClient.Session;
 using FTPClient.ViewModels;
 using FTPClient.Views;
 using HotAvalonia;
@@ -50,28 +52,37 @@ public partial class App : Application
         IFilesAndDirectoriesService _filesAndDirectoriesService = new FilesAndDirectoriesService();
         string LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-        List<Profile> allProfiles = _filesAndDirectoriesService.GetUserSettings();
+        var getUserSettingsResult = _filesAndDirectoriesService.GetUserSettings();
+        if (!getUserSettingsResult.IsSuccess)
+            SetDefaultValues(_filesAndDirectoriesService, LocalPath);
+        
+        var allProfiles = getUserSettingsResult.Value;
         if (!allProfiles.Any())
-        {
-            Profile profile = new Profile()
-            {
-                Name = "Default",
-                ProfileSettings = new ProfileSettings()
-                {
-                    LocalPath = LocalPath,
-                    ProfileColor = new JsonColor
-                    {
-                        R = 36,
-                        G = 39,
-                        B = 42
-                    },
-                }
-            };
-            _filesAndDirectoriesService.SaveUserConfigFile(profile);
-            _filesAndDirectoriesService.SaveCurrentProfile();
-        }
+            SetDefaultValues(_filesAndDirectoriesService, LocalPath);
+        
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void SetDefaultValues(IFilesAndDirectoriesService filesAndDirectoriesService,
+        string localPath)
+    {
+        Profile profile = new Profile()
+        {
+            Name = "Default",
+            ProfileSettings = new ProfileSettings()
+            {
+                LocalPath = localPath,
+                ProfileColor = new JsonColor
+                {
+                    R = 36,
+                    G = 39,
+                    B = 42
+                },
+            }
+        };
+        filesAndDirectoriesService.SaveUserConfigFile(profile);
+        filesAndDirectoriesService.SaveCurrentProfile();
     }
     private void ConfigureServices()
     {
@@ -81,12 +92,15 @@ public partial class App : Application
             options.UseSqlite($"Data Source={Path.Join(AppDomain.CurrentDomain.BaseDirectory, "connections.db")}" ??
                               throw new InvalidOperationException("Connection string 'DefaultConnection' not found."));
         });
+
+        services.AddSingleton<ISessionConnection, SessionConnection>();
+        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         
         services.AddSingleton<IServerOperationService, ServerOperationService>();
         services.AddSingleton<IFilesAndDirectoriesService, FilesAndDirectoriesService>();
         services.AddScoped<IConnectionsRepository, ConnectionsRepository>();
         
-        services.AddSingleton<HomePageViewModel>();
+        services.AddSingleton<IHomePageViewModelFactory, HomePageViewModelFactory>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddTransient<SettingsPageViewModel>();
         services.AddTransient<HistoryPageViewModel>();

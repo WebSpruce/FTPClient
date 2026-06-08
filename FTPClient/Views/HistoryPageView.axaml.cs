@@ -22,16 +22,4 @@ public partial class HistoryPageView : UserControl
             await viewModel.OnLoad();
         }
     }
-
-    private void ConnectBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var item = (sender as Button).DataContext as Connection;
-        HistoryPageViewModel.instance.Connect(item);
-    }
-
-    private void RemoveBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var item = (sender as Button).DataContext as Connection;
-        HistoryPageViewModel.instance.Remove(item);
-    }
 }

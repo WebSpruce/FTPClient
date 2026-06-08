@@ -4,18 +4,17 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using FTPClient.Helper;
 using FTPClient.Models;
 using FTPClient.Service.Interfaces;
 using FTPClient.Service.Services;
-using FTPClient.Views;
 using MsBox.Avalonia;
-using MsBox.Avalonia.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Messaging;
+using FTPClient.Messages;
 
 namespace FTPClient.ViewModels;
 
@@ -39,27 +38,56 @@ public partial class SettingsPageViewModel : ViewModelBase
     private Color _colorPickerColor = Color.FromRgb(36, 39, 42);
 
     private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
-    private string newPath = string.Empty;
-    public static SettingsPageViewModel instance;
-    public SettingsPageViewModel()
-    {
-        instance = this;
-        _filesAndDirectoriesService = new FilesAndDirectoriesService();
-        CurrentProfile = _filesAndDirectoriesService.GetCurrentProfile();
-        LocalPath = _filesAndDirectoriesService.GetUserSettings(CurrentProfile).ProfileSettings.LocalPath;
+    private readonly IMessenger _messenger;
 
-        var color = _filesAndDirectoriesService.GetUserSettings(CurrentProfile).ProfileSettings.ProfileColor;
-        if (color != null)
+    public SettingsPageViewModel()  //only for design-time
+    {
+        CurrentProfile = "Default";
+        LocalPath = "/home/user";
+        Profiles = new List<Profile>
         {
-            ColorPickerColor = Color.FromRgb(color.R, color.G, color.B);
-        }
-        else
-        {
-            ColorPickerColor = Color.FromRgb(36, 39, 42);
-        }
-        SetProfilesCombobox();
+            new() { Name = "Default" },
+            new() { Name = "Work" }
+        };
+    }
+    public SettingsPageViewModel(IFilesAndDirectoriesService filesAndDirectoriesService, IMessenger messenger)
+    {
+        _filesAndDirectoriesService = filesAndDirectoriesService;
+        _messenger = messenger;
     }
 
+    internal async Task OnLoad()
+    {
+        await Initialize();
+    }
+    
+    private async Task Initialize()
+    {
+        var getCurrentProfileResult = _filesAndDirectoriesService.GetCurrentProfile();
+        if (!getCurrentProfileResult.IsSuccess)
+        {
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Get current profile error: {getCurrentProfileResult.Errors}.").ShowAsync();
+            return;
+        }
+        CurrentProfile = getCurrentProfileResult.Value;
+        
+        var getUserSettingsResult = _filesAndDirectoriesService.GetUserSettings(CurrentProfile);
+        if (!getUserSettingsResult.IsSuccess)
+        {
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Get user settings error: {getUserSettingsResult.Errors}.").ShowAsync();
+            return;
+        }
+        LocalPath = getUserSettingsResult.Value.ProfileSettings.LocalPath;
+            
+        var color = getUserSettingsResult.Value.ProfileSettings.ProfileColor;
+        if (color != null)
+            ColorPickerColor = Color.FromRgb(color.R, color.G, color.B);
+        else
+            ColorPickerColor = Color.FromRgb(36, 39, 42);
+        
+        await SetProfilesCombobox();
+    }
+    
     [RelayCommand]
     private async Task OpenFolder()
     {
@@ -73,9 +101,10 @@ public partial class SettingsPageViewModel : ViewModelBase
                 AllowMultiple = false,
             });
 
-            if (directory[0] != null)
+            var selected = directory.FirstOrDefault();
+            if (selected != null)
             {
-                LocalPath = directory[0].Path.AbsolutePath;
+                LocalPath = selected.Path.AbsolutePath;
             }
         }
         catch (Exception ex)
@@ -85,36 +114,57 @@ public partial class SettingsPageViewModel : ViewModelBase
             await errorMessageBox.ShowAsync();
         }
     }
-    private void SetProfilesCombobox()
+    private async Task SetProfilesCombobox()
     {
-        Profiles = _filesAndDirectoriesService.GetUserSettings();
-        int indexOfMyProfile = Profiles.IndexOf(Profiles.Where(p => p.Name == CurrentProfile).FirstOrDefault());
-        SelectedIndex = indexOfMyProfile;
+        var getCurrentProfileResult = _filesAndDirectoriesService.GetUserSettings();
+        if (!getCurrentProfileResult.IsSuccess)
+        {
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Get current profile error: {getCurrentProfileResult.Errors}.").ShowAsync();
+            return;
+        }
+        Profiles = getCurrentProfileResult.Value;
+
+        var currentProfile = Profiles.FirstOrDefault(p => p.Name == CurrentProfile);
+        if(currentProfile == null)
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Selected profile is empty").ShowAsync();
+        else
+        {
+            int indexOfMyProfile = Profiles.IndexOf(currentProfile);
+            SelectedIndex = indexOfMyProfile;
+        }
     }
     [RelayCommand]
-    private void ChangeProfile()
+    private async Task ChangeProfile()
     {
-        SetNewCurrentProfile(SelectedIndex);
+        await SetNewCurrentProfile(SelectedIndex);
     }
-    private void SetNewCurrentProfile(int selectedIndex)
+    private async Task SetNewCurrentProfile(int selectedIndex)
     {
         var profile = Profiles[selectedIndex];
-        _filesAndDirectoriesService.SaveCurrentProfile(profile.Name);
+        var saveCurrentProfileResult= _filesAndDirectoriesService.SaveCurrentProfile(profile.Name);
+        if (!saveCurrentProfileResult.IsSuccess)
+        {
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Save current profile error: {saveCurrentProfileResult.Errors}.").ShowAsync();
+            return;
+        }
 
         CurrentProfile = profile.Name;
-        var settings = _filesAndDirectoriesService.GetUserSettings(CurrentProfile);
+        var getUserSettingsResult = _filesAndDirectoriesService.GetUserSettings(CurrentProfile);
+        if (!getUserSettingsResult.IsSuccess)
+        {
+            await MessageBoxManager.GetMessageBoxStandard("Error", $"Get user settings error: {getUserSettingsResult.Errors}.").ShowAsync();
+            return;
+        }
+        var settings = getUserSettingsResult.Value;
+        
         LocalPath = settings.ProfileSettings.LocalPath;
         var color = settings.ProfileSettings.ProfileColor;
         if(color != null)
-        {
             ColorPickerColor = Color.FromRgb(color.R, color.G, color.B);
-        }
         else
-        {
             ColorPickerColor = Color.FromRgb(36, 39, 42);
-        }
-
-        MainWindowViewModel.instance.CurrentProfileIcon = CurrentProfile.Substring(0, 1).ToUpper();
+        
+        _messenger.Send(new ProfileNameChangedMessage(CurrentProfile));
     }
     [RelayCommand]
     private void ShowAddProfileForm()
@@ -126,9 +176,14 @@ public partial class SettingsPageViewModel : ViewModelBase
     {
         try
         {
-            _filesAndDirectoriesService.AddNewProfile(NewProfile);
+            var addNewProfileResult = _filesAndDirectoriesService.AddNewProfile(NewProfile);
+            if (!addNewProfileResult.IsSuccess)
+            {
+                await MessageBoxManager.GetMessageBoxStandard("Error", $"Add new profile error: {addNewProfileResult.Errors}.").ShowAsync();
+                return;
+            }
             IsTextBoxVisible = false;
-            SetProfilesCombobox();
+            await SetProfilesCombobox();
         }
         catch (Exception ex)
         {
@@ -143,8 +198,13 @@ public partial class SettingsPageViewModel : ViewModelBase
         try
         {
             var profile = Profiles[SelectedIndex];
-            _filesAndDirectoriesService.DeleteProfile(profile.Name);
-            SetProfilesCombobox();
+            var deleteProfileResult = _filesAndDirectoriesService.DeleteProfile(profile.Name);
+            if (!deleteProfileResult.IsSuccess)
+            {
+                await MessageBoxManager.GetMessageBoxStandard("Error", $"Delete profile error: {deleteProfileResult.Errors}.").ShowAsync();
+                return;
+            }
+            await SetProfilesCombobox();
         }
         catch (Exception ex)
         {
@@ -158,7 +218,7 @@ public partial class SettingsPageViewModel : ViewModelBase
     {
         try
         {
-            HomePageViewModel.instance.LocalPath = newPath;
+            _messenger.Send(new LocalPathChangedMessage(LocalPath));
 
             Profile profile = new Profile()
             {
@@ -172,7 +232,12 @@ public partial class SettingsPageViewModel : ViewModelBase
                     },
                 }
             };
-            _filesAndDirectoriesService.SaveUserConfigFile(profile);
+            var saveUserConfigFileResult = _filesAndDirectoriesService.SaveUserConfigFile(profile);
+            if (!saveUserConfigFileResult.IsSuccess)
+            {
+                await MessageBoxManager.GetMessageBoxStandard("Error", $"Save user config file error: {saveUserConfigFileResult.Errors}.").ShowAsync();
+                return;
+            }
 
             var changedFolderMessageBox = MessageBoxManager.GetMessageBoxStandard("Saved", "Settings saved.");
             await changedFolderMessageBox.ShowAsync();
@@ -187,14 +252,6 @@ public partial class SettingsPageViewModel : ViewModelBase
     internal void ColorPickerColorChanged(Color newColor)
     {
         ColorPickerColor = newColor;
-        if (DarkOrLightColor.IsLightColor(ColorPickerColor))
-        {
-            MainWindow.instance.ProfileIcon.Foreground = new SolidColorBrush(Color.FromRgb(36, 39, 42));
-        }
-        else
-        {
-            MainWindow.instance.ProfileIcon.Foreground = new SolidColorBrush(Color.FromRgb(107, 139, 161));
-        }
-        MainWindow.instance.ProfileIcon.Background = new SolidColorBrush(ColorPickerColor);
+        _messenger.Send(new ProfileColorChangedMessage(newColor));
     }
 }
