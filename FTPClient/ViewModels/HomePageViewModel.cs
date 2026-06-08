@@ -7,9 +7,7 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -152,9 +150,7 @@ public partial class HomePageViewModel : ViewModelBase,
             }
         }
     }
-
-    internal string currentProfileName = string.Empty;
-
+    
     [ObservableProperty]
     private string _newDirectoryName = string.Empty;
     [ObservableProperty]
@@ -281,7 +277,7 @@ public partial class HomePageViewModel : ViewModelBase,
                 ServerFiles.Clear();
                 
                 var rootDirResult = await _serverOperationService.LoadSingleLevel(_sessionConnection.CurrentSftpClient, "/", token, "Root");
-                if (!connectResult.IsSuccess)
+                if (!rootDirResult.IsSuccess)
                 {
                     var errorMessageBox = MessageBoxManager.GetMessageBoxStandard("Error", $"Loading error: {rootDirResult.Errors}.");
                     await errorMessageBox.ShowAsync();

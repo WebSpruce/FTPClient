@@ -34,8 +34,8 @@ public partial class MainWindowViewModel : ViewModelBase,
     
     [ObservableProperty] private ListItemTemplate? _selectedListItemMain;
     [ObservableProperty] private ListItemTemplate? _selectedListItemFooter;
-    [ObservableProperty] private IBrush? _profileIconForeground = new SolidColorBrush(Color.FromRgb(153,170,181));
-    [ObservableProperty] private IBrush? _profileIconBackground = new SolidColorBrush(Colors.Transparent);
+    [ObservableProperty] private IBrush? _profileIconForeground = new ImmutableSolidColorBrush(Color.FromRgb(153,170,181));
+    [ObservableProperty] private IBrush? _profileIconBackground = new ImmutableSolidColorBrush(Colors.Transparent);
 
     [ObservableProperty] 
     private string? _currentProfileIcon;

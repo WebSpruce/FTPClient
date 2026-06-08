@@ -101,9 +101,10 @@ public partial class SettingsPageViewModel : ViewModelBase
                 AllowMultiple = false,
             });
 
-            if (directory[0] != null)
+            var selected = directory.FirstOrDefault();
+            if (selected != null)
             {
-                LocalPath = directory[0].Path.AbsolutePath;
+                LocalPath = selected.Path.AbsolutePath;
             }
         }
         catch (Exception ex)
