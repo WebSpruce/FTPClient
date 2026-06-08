@@ -50,7 +50,7 @@ public partial class MainWindowViewModel : ViewModelBase,
         new ListItemTemplate(typeof(SettingsPageViewModel), "SettingsRegular"),
         new ListItemTemplate(typeof(ExitPageViewModel), "ExitRegular"),
     };
-    internal Dictionary<Type, ViewModelBase> pagesDictionary = new Dictionary<Type, ViewModelBase>();
+    private readonly Dictionary<Type, ViewModelBase> _pageCache = new();
     private readonly IServiceProvider _serviceProvider;
     private readonly IHomePageViewModelFactory _homeFactory;
     private readonly IMessenger _messenger;
@@ -71,8 +71,11 @@ public partial class MainWindowViewModel : ViewModelBase,
         _messenger.RegisterAll(this);
         
         _currentPage = _homeFactory.Create();
-
-        Task.Run(async () => await Initialize());
+    }
+    
+    internal async Task OnLoad()
+    {
+        await Initialize();
     }
 
     private async Task Initialize()
@@ -147,28 +150,7 @@ public partial class MainWindowViewModel : ViewModelBase,
             return;
         }
 
-        if (!pagesDictionary.ContainsKey(CurrentPage.GetType()))
-        {
-            var page = (ViewModelBase)CurrentPage;
-            pagesDictionary.Add(CurrentPage.GetType(), page);
-        }
-
-        var modelType = item.ModelType;
-        if (pagesDictionary.ContainsKey(modelType))
-        {
-            CurrentPage = pagesDictionary[modelType];
-        }
-        else
-        {
-            var instance = _serviceProvider.GetRequiredService(modelType);
-            if (instance is null)
-            {
-                return;
-            }
-
-            CurrentPage = (ViewModelBase)instance;
-            pagesDictionary.Add(modelType, CurrentPage);
-        }
+        CurrentPage = GetOrCreatePage(item.ModelType);
     }
     
     [RelayCommand]
@@ -177,6 +159,18 @@ public partial class MainWindowViewModel : ViewModelBase,
         IsPaneOpen = !IsPaneOpen;
     }
 
+    private ViewModelBase GetOrCreatePage(Type pageType)
+    {
+        if (_pageCache.TryGetValue(pageType, out var existingPage))
+            return existingPage;
+
+        ViewModelBase page = pageType == typeof(HomePageViewModel)
+            ? _homeFactory.Create()
+            : (ViewModelBase)_serviceProvider.GetRequiredService(pageType);
+
+        _pageCache[pageType] = page;
+        return page;
+    }
 
     public void Receive(NavigateToHomeMessage message)
     {
@@ -192,7 +186,7 @@ public partial class MainWindowViewModel : ViewModelBase,
 
         CurrentPage = homeVm;
         // Refresh page cache so next navigation uses the new instance
-        pagesDictionary[typeof(HomePageViewModel)] = homeVm;
+        _pageCache[typeof(HomePageViewModel)] = homeVm;
     }
 
     public void Receive(ProfileColorChangedMessage message)

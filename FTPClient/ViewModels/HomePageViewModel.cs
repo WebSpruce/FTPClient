@@ -84,92 +84,71 @@ public partial class HomePageViewModel : ViewModelBase,
     [ObservableProperty]
     private string _localPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
     
-    private Directory _selectedDirectory;
-    public Directory SelectedDirectory
+    private Directory? _selectedDirectory;
+    public Directory? SelectedDirectory
     {
         get => _selectedDirectory;
-        set
-        {
-            SetProperty(ref _selectedDirectory, value);
-            if (_selectedDirectory != null)
-            {
-                SelectedFileItem = null;
-                ServerPath = _selectedDirectory.Path;
-            }
-        }
+        set => SetProperty(ref _selectedDirectory, value);
     }
-    private FileItem _selectedFileItem;
-    public FileItem SelectedFileItem
+
+    private FileItem? _selectedFileItem;
+    public FileItem? SelectedFileItem
     {
         get => _selectedFileItem;
-        set
-        {
-            SetProperty(ref _selectedFileItem, value);
-            if (_selectedFileItem != null)
-            {
-                SelectedDirectory = null;
-                ServerPath = _selectedFileItem.Path;
-            }
-        }
+        set => SetProperty(ref _selectedFileItem, value);
     }
-    private object _selectedServerItem;
-    public object SelectedServerItem
+
+    private object? _selectedServerItem;
+    public object? SelectedServerItem
     {
         get => _selectedServerItem;
         set
         {
-            if (value is Directory directory)
+            SetProperty(ref _selectedServerItem, value);
+
+            switch (value)
             {
-                SelectedDirectory = directory;
-            }
-            else if (value is FileItem fileItem)
-            {
-                SelectedFileItem = fileItem;
+                case Directory directory:
+                    SelectServerDirectory(directory);
+                    break;
+
+                case FileItem file:
+                    SelectServerFile(file);
+                    break;
             }
         }
     }
 
-    private Directory _selectedLocalDirectory;
-    public Directory SelectedLocalDirectory
+    private Directory? _selectedLocalDirectory;
+    public Directory? SelectedLocalDirectory
     {
         get => _selectedLocalDirectory;
-        set
-        {
-            SetProperty(ref _selectedLocalDirectory, value);
-            if (_selectedLocalDirectory != null)
-            {
-                SelectedLocalFileItem = null;
-                LocalPath = _selectedLocalDirectory.Path;
-            }
-        }
+        set => SetProperty(ref _selectedLocalDirectory, value);
     }
-    private FileItem _selectedLocalFileItem;
-    public FileItem SelectedLocalFileItem
+
+    private FileItem? _selectedLocalFileItem;
+    public FileItem? SelectedLocalFileItem
     {
         get => _selectedLocalFileItem;
-        set
-        {
-            SetProperty(ref _selectedLocalFileItem, value);
-            if (_selectedLocalFileItem != null)
-            {
-                SelectedLocalDirectory = null;
-                LocalPath = _selectedLocalFileItem.Path;
-            }
-        }
+        set => SetProperty(ref _selectedLocalFileItem, value);
     }
-    private object _selectedLocalItem;
-    public object SelectedLocalItem
+    private object? _selectedLocalItem;
+    public object? SelectedLocalItem
     {
         get => _selectedLocalItem;
         set
         {
-            if (value is Directory directory)
+            SetProperty(ref _selectedLocalItem, value);
+
+            switch (value)
             {
-                SelectedLocalDirectory = directory;
-            }
-            else if (value is FileItem fileItem)
-            {
-                SelectedLocalFileItem = fileItem;
+                case Directory directory:
+                    SelectLocalDirectory(directory);
+                    break;
+
+                case FileItem file:
+                    SelectLocalFile(file);
+                    break;
             }
         }
     }
@@ -190,14 +169,12 @@ public partial class HomePageViewModel : ViewModelBase,
     [ObservableProperty]
     private bool _isRenameFormVisible = false;
     
-    private IServerOperationService _serverOperationService;
-    private IFilesAndDirectoriesService _filesAndDirectoriesService;
-    private IConnectionsRepository _connectionsRepository;
-    private ISessionConnection _sessionConnection;
+    private readonly IServerOperationService _serverOperationService;
+    private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
+    private readonly IConnectionsRepository _connectionsRepository;
+    private readonly ISessionConnection _sessionConnection;
     private CancellationTokenSource _ctsSource;
     private CancellationToken _cts;
-    public static HomePageViewModel instance;
-    public ICommand DirectoryExpandedCommand { get; set; }
     public HomePageViewModel() { }
     public HomePageViewModel(IServerOperationService serverOperationService,
         IFilesAndDirectoriesService filesAndDirectoriesService,
@@ -205,29 +182,24 @@ public partial class HomePageViewModel : ViewModelBase,
         ISessionConnection sessionConnection,
         Connection? connection = null)
     {
-        Initialize(serverOperationService, filesAndDirectoriesService, connectionsRepository, sessionConnection);
+        _sessionConnection = sessionConnection;
+        _serverOperationService = serverOperationService;
+        _filesAndDirectoriesService = filesAndDirectoriesService;
+        _connectionsRepository = connectionsRepository;
+        Initialize(connection);
+    }
+
+    private void Initialize(Connection? connection = null)
+    {
+        _ctsSource = new CancellationTokenSource();
+        _cts = _ctsSource.Token;
+        
         if (connection is not null)
         {
             Host = connection.Host;
             Port = connection.Port.ToString();
             Username = connection.Username;
         }
-    }
-
-    private void Initialize(IServerOperationService serverOperationService,
-        IFilesAndDirectoriesService filesAndDirectoriesService,
-        IConnectionsRepository connectionsRepository,
-        ISessionConnection sessionConnection)
-    {
-        _sessionConnection = sessionConnection;
-        _serverOperationService = serverOperationService;
-        _filesAndDirectoriesService = filesAndDirectoriesService;
-        _connectionsRepository = connectionsRepository;
-
-        _ctsSource = new CancellationTokenSource();
-        _cts = _ctsSource.Token;
-        
-        DirectoryExpandedCommand = new AsyncRelayCommand<Directory>(LoadDirectoryChildrenOnDemand);
     }
 
     internal async Task OnLoad()
@@ -771,6 +743,34 @@ public partial class HomePageViewModel : ViewModelBase,
             ServerFiles.Add(rootDir);
             ServerProgressBarValue = 100;
         }
+    }
+    
+    private void SelectServerDirectory(Directory directory)
+    {
+        SetProperty(ref _selectedDirectory, directory);
+        SelectedFileItem = null;
+        ServerPath = directory.Path;
+    }
+
+    private void SelectServerFile(FileItem file)
+    {
+        SetProperty(ref _selectedFileItem, file);
+        SelectedDirectory = null;
+        ServerPath = file.Path;
+    }
+    
+    private void SelectLocalDirectory(Directory directory)
+    {
+        SelectedLocalDirectory = directory;
+        SelectedLocalFileItem = null;
+        LocalPath = directory.Path;
+    }
+
+    private void SelectLocalFile(FileItem file)
+    {
+        SelectedLocalFileItem = file;
+        SelectedLocalDirectory = null;
+        LocalPath = file.Path;
     }
 
     public void Receive(LocalPathChangedMessage message)

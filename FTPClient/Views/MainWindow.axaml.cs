@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using FTPClient.ViewModels;
 
@@ -15,7 +16,15 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel;
+        Loaded += OnLoaded;
     }
+
+    private async void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+            await vm.OnLoad();
+    }
+
     public MainWindow()
     {
         InitializeComponent();

@@ -16,10 +16,8 @@ namespace FTPClient.ViewModels;
 public partial class HistoryPageViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private ViewModelBase _currentPage = default!;
-    [ObservableProperty]
     private List<Connection> _connections = new();
-    private IConnectionsRepository _connectionRepository;
+    private readonly IConnectionsRepository _connectionRepository;
     private readonly IMessenger _messenger;
     private readonly CancellationTokenSource _ctsSource;
     private readonly CancellationToken _cts;
@@ -29,7 +27,6 @@ public partial class HistoryPageViewModel : ViewModelBase
         _messenger = messenger;
         _ctsSource = new CancellationTokenSource();
         _cts = _ctsSource.Token;
-        Task.Run(async () => Connections = await _connectionRepository.GetAllConnections(_cts));
     } 
     internal async Task OnLoad()
     {

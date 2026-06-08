@@ -39,11 +39,16 @@ public partial class SettingsPageViewModel : ViewModelBase
 
     private readonly IFilesAndDirectoriesService _filesAndDirectoriesService;
     private readonly IMessenger _messenger;
-    private string newPath = string.Empty;
 
     public SettingsPageViewModel()  //only for design-time
     {
-        _filesAndDirectoriesService = new FilesAndDirectoriesService();
+        CurrentProfile = "Default";
+        LocalPath = "/home/user";
+        Profiles = new List<Profile>
+        {
+            new() { Name = "Default" },
+            new() { Name = "Work" }
+        };
     }
     public SettingsPageViewModel(IFilesAndDirectoriesService filesAndDirectoriesService, IMessenger messenger)
     {
@@ -212,7 +217,7 @@ public partial class SettingsPageViewModel : ViewModelBase
     {
         try
         {
-            _messenger.Send(new LocalPathChangedMessage(newPath));
+            _messenger.Send(new LocalPathChangedMessage(LocalPath));
 
             Profile profile = new Profile()
             {
