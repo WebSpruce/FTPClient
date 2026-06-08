@@ -9,84 +9,139 @@ namespace FTPClient.Tests.DatabaseTests;
 
 public class DatabaseTests
 {
-    private readonly AppDbContext _mockAppDbContext;
+    private static readonly List<Connection> SeedConnections =
+    [
+        new Connection { Host = "123.123.123.123", Id = 1, Port = 22, Username = "Username1" },
+        new Connection { Host = "321.123.123.321", Id = 2, Port = 22, Username = "Username2" }
+    ];
 
-    private readonly List<Connection> _connections = new List<Connection>()
-    {
-        new Connection() { Host = "123.123.123.123", Id = 1, Port = 22, Username = "Username1" },
-        new Connection() { Host = "321.123.123.321", Id = 2, Port = 22, Username = "Username2" }
-    };
-    public DatabaseTests()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString())
-            .Options;
-        var dbContext = new AppDbContext(options);
-        
-        dbContext.Database.EnsureCreated();
-        _mockAppDbContext = dbContext;
-    }
     [Fact]
-    public async Task ConnectionsRepository_GetAllConnections_ReturnsAllConnectionsFromDBIfExistsAndNotEmpty()
+    public async Task GetAllConnections_ReturnsAllConnections_WhenDatabaseHasData()
     {
-        FillDbWithData(_mockAppDbContext, _connections);
-        var mockDb = new Mock<IDbContextFactory<AppDbContext>>();
-        mockDb.Setup(db => db.CreateDbContextAsync(default))
-            .ReturnsAsync(_mockAppDbContext);
-        var repo = new ConnectionsRepository(mockDb.Object);
-        var result = await repo.GetAllConnections();
-        
-        result.Should().NotBeEmpty();
+        // Arrange
+        var factory = CreateFactory();
+        await SeedAsync(factory, SeedConnections);
+        var cts = GetCancellationToken();
+
+        var repository = new ConnectionsRepository(factory);
+
+        // Act
+        var result = await repository.GetAllConnections(cts);
+
+        // Assert
+        result.Should().NotBeNull();
         result.Should().HaveCount(2);
-        result.Should().ContainEquivalentOf(_connections[0]);
-        result.Should().ContainEquivalentOf(_connections[1]);
+        result.Should().ContainEquivalentOf(SeedConnections[0]);
+        result.Should().ContainEquivalentOf(SeedConnections[1]);
     }
+
     [Fact]
-    public async Task ConnectionsRepository_GetAllConnections_ReturnsEmptyListIfItIsEmpty()
+    public async Task GetAllConnections_ReturnsEmptyList_WhenDatabaseIsEmpty()
     {
-        FillDbWithData(_mockAppDbContext, new List<Connection>());
-        var mockDb = new Mock<IDbContextFactory<AppDbContext>>();
-        mockDb.Setup(db => db.CreateDbContextAsync(default))
-            .ReturnsAsync(_mockAppDbContext);
-        var repo = new ConnectionsRepository(mockDb.Object);
-        var result = await repo.GetAllConnections();
-        
+        var factory = CreateFactory();
+        var repository = new ConnectionsRepository(factory);
+        var cts = GetCancellationToken();
+
+        var result = await repository.GetAllConnections(cts);
+
         result.Should().NotBeNull();
         result.Should().BeEmpty();
-        result.Should().HaveCount(0);
     }
-    [Theory]
-    [InlineData("123.123.123.123", "Username1", 1, 22)]
-    public async Task ConnectionsRepository_DeleteConnection_ShouldRemoveItem_WhenItemExists(string Host, string Username, int Id, int Port)
+
+    [Fact]
+    public async Task DeleteConnection_RemovesItem_WhenItemExists()
+    {
+        var factory = CreateFactory();
+        await SeedAsync(factory, SeedConnections);
+        var cts = GetCancellationToken();
+
+        var repository = new ConnectionsRepository(factory);
+        var itemToDelete = new Connection
+        {
+            Host = "123.123.123.123",
+            Username = "Username1",
+            Port = 22,
+            Id = 1
+        };
+        
+        await repository.DeleteConnection(itemToDelete, cts);
+        
+        await using var assertContext = await factory.CreateDbContextAsync();
+        var remainingConnections = await assertContext.Connections.ToListAsync();
+
+        remainingConnections.Should().HaveCount(1);
+        remainingConnections.Should().ContainSingle(c => c.Id == 2);
+        remainingConnections.Should().NotContain(c => c.Id == itemToDelete.Id);
+    }
+
+    [Fact]
+    public async Task SaveConnection_AddsItem_WhenConnectionIsValid()
+    {
+        var factory = CreateFactory();
+        var repository = new ConnectionsRepository(factory);
+        var cts = GetCancellationToken();
+
+        var connection = new Connection
+        {
+            Host = "111.222.333.444",
+            Id = 3,
+            Port = 22,
+            Username = "Username3"
+        };
+
+        await repository.SaveConnection(connection, cts);
+
+        await using var assertContext = await factory.CreateDbContextAsync();
+        var connections = await assertContext.Connections.ToListAsync();
+
+        connections.Should().HaveCount(1);
+        connections.Should().ContainEquivalentOf(connection);
+    }
+
+    private static TestDbContextFactory CreateFactory()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString()) 
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        var dbContext = new AppDbContext(options);
-        FillDbWithData(dbContext, _connections);
-        
-        var mockFactory = new Mock<IDbContextFactory<AppDbContext>>();
-        mockFactory.Setup(f => f.CreateDbContextAsync(default))
-                   .ReturnsAsync(dbContext);
-        var repository = new ConnectionsRepository(mockFactory.Object);
 
-        var itemToDelete = new Connection() { Host = Host, Username = Username, Port = Port, Id = Id };
-        await repository.DeleteConnection(itemToDelete);
-    
-        await using (var assertContext = new AppDbContext(options))
-        {
-            var remainingConnections = await assertContext.Connections.ToListAsync();
-            
-            remainingConnections.Should().NotBeNull();
-            remainingConnections.Should().HaveCount(1);
-            remainingConnections.Should().ContainEquivalentOf(_connections[1]);
-            remainingConnections.Should().NotContain(c => c.Id == itemToDelete.Id);
-        }
+        return new TestDbContextFactory(options);
     }
 
-    private void FillDbWithData(AppDbContext dbContext, List<Connection> connections)
+    private static async Task SeedAsync(
+        IDbContextFactory<AppDbContext> factory,
+        IEnumerable<Connection> connections)
     {
-        dbContext.Connections.AddRange(connections);
-        dbContext.SaveChanges();
+        await using var context = await factory.CreateDbContextAsync();
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
+
+        await context.Connections.AddRangeAsync(connections);
+        await context.SaveChangesAsync();
+    }
+
+    private static CancellationToken GetCancellationToken()
+    {
+        var ctsSource = new CancellationTokenSource();
+        return ctsSource.Token;
+    }
+
+    private sealed class TestDbContextFactory : IDbContextFactory<AppDbContext>
+    {
+        private readonly DbContextOptions<AppDbContext> _options;
+
+        public TestDbContextFactory(DbContextOptions<AppDbContext> options)
+        {
+            _options = options;
+        }
+
+        public AppDbContext CreateDbContext()
+        {
+            return new AppDbContext(_options);
+        }
+
+        public Task<AppDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new AppDbContext(_options));
+        }
     }
 }
